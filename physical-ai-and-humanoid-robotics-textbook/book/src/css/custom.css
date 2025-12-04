@@ -1,0 +1,246 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/**
+ * Any CSS you add here will be applied to all pages of your Docusaurus site.
+ */
+
+/* Custom properties for a professional, tech-oriented theme */
+:root {
+  /* Primary brand colors */
+  --ifm-color-primary: #3b82f6; /* Blue 500 */
+  --ifm-color-primary-dark: #2563eb; /* Blue 600 */
+  --ifm-color-primary-darker: #1d4ed8; /* Blue 700 */
+  --ifm-color-primary-darkest: #1e40af; /* Blue 800 */
+  --ifm-color-primary-light: #60a5fa; /* Blue 400 */
+  --ifm-color-primary-lighter: #93c5fd; /* Blue 300 */
+  --ifm-color-primary-lightest: #bfdbfe; /* Blue 200 */
+
+  /* Secondary accent colors (e.g., for highlights, interactive elements) */
+  --ifm-color-secondary: #06b6d4; /* Cyan 500 */
+  --ifm-color-secondary-dark: #0891b2; /* Cyan 600 */
+  --ifm-color-secondary-light: #22d3ee; /* Cyan 400 */
+
+  /* Tertiary accent colors (e.g., for complementary highlights) */
+  --ifm-color-tertiary: #22c55e; /* Green 500 */
+  --ifm-color-tertiary-dark: #16a34a; /* Green 600 */
+  --ifm-color-tertiary-light: #4ade80; /* Green 400 */
+
+  /* Neutral tones for text and backgrounds (grayscale) */
+  --ifm-color-gray-50: #f9fafb;
+  --ifm-color-gray-100: #f3f4f6;
+  --ifm-color-gray-200: #e5e7eb;
+  --ifm-color-gray-300: #d1d5db;
+  --ifm-color-gray-400: #9ca3af;
+  --ifm-color-gray-500: #6b7280;
+  --ifm-color-gray-600: #4b5563;
+  --ifm-color-gray-700: #374151;
+  --ifm-color-gray-800: #1f2937;
+  --ifm-color-gray-900: #111827;
+
+  /* Typography */
+  --ifm-font-family-base: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --ifm-heading-font-family: "Poppins", var(--ifm-font-family-base);
+  --ifm-global-line-height: 1.75; /* Slightly increased for better readability */
+  --ifm-h1-font-size: 3rem;
+  --ifm-h2-font-size: 2.25rem;
+  --ifm-h3-font-size: 1.875rem;
+  --ifm-h1-margin-bottom: 1.5rem;
+  --ifm-h2-margin-top: 2rem;
+  --ifm-h2-margin-bottom: 1rem;
+  --ifm-h3-margin-top: 1.75rem;
+  --ifm-h3-margin-bottom: 0.75rem;
+  --ifm-code-font-size: 95%;
+}
+
+/* Dark theme adjustments */
+html[data-theme='dark'] {
+  --ifm-background-color: #0f172a; /* Slate 900 */
+  --ifm-navbar-background-color: #1a202c; /* Slightly lighter for contrast */
+  --ifm-footer-background-color: #0f172a;
+  --ifm-code-background: #1e293b; /* Slate 800 */
+  --ifm-font-color-base: #e2e8f0; /* Light text for dark mode */
+  --ifm-heading-color: #ffffff;
+
+  --ifm-color-primary: #60a5fa; /* Blue 400 */
+  --ifm-color-primary-dark: #3b82f6; /* Blue 500 */
+  --ifm-color-primary-darker: #2563eb; /* Blue 600 */
+  --ifm-color-primary-darkest: #1d4ed8; /* Blue 700 */
+  --ifm-color-primary-light: #93c5fd; /* Blue 300 */
+  --ifm-color-primary-lighter: #bfdbfe; /* Blue 200 */
+  --ifm-color-primary-lightest: #dbeafe; /* Blue 100 */
+
+  --ifm-color-secondary: #22d3ee; /* Cyan 400 */
+  --ifm-color-secondary-dark: #06b6d4; /* Cyan 500 */
+  --ifm-color-secondary-light: #67e8f9; /* Cyan 300 */
+
+  --ifm-color-tertiary: #4ade80; /* Green 400 */
+  --ifm-color-tertiary-dark: #22c55e; /* Green 500 */
+  --ifm-color-tertiary-light: #86efac; /* Green 300 */
+}
+
+/* Base body styles */
+body {
+  font-family: var(--ifm-font-family-base);
+  line-height: var(--ifm-global-line-height);
+  color: var(--ifm-color-gray-700);
+}
+
+/* Apply text-wrap: balance to markdown headings */
+.markdown h1, .markdown h2, .markdown h3 {
+  text-wrap: balance;
+}
+
+/* Images within markdown */
+.markdown img {
+  max-width: 100%;
+  height: auto;
+  margin-bottom: 1.5rem;
+  border-radius: 0.5rem; /* Slightly rounded corners for images */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Subtle shadow */
+}
+
+/* Lists within markdown */
+.markdown ul, .markdown ol {
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.markdown li {
+  margin-bottom: 0.5rem;
+}
+
+/* Code blocks and inline code */
+.markdown pre {
+  background-color: var(--ifm-code-background);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin-bottom: 1.5rem;
+  line-height: 1.4;
+}
+
+.markdown code {
+  background-color: var(--ifm-code-background);
+  padding: 0.2em 0.4em;
+  border-radius: 0.25rem;
+  font-size: var(--ifm-code-font-size);
+  color: var(--ifm-font-color-base);
+}
+
+/* Specific for inline code within text */
+.markdown p code, .markdown li code {
+  color: var(--ifm-color-secondary-dark); /* Highlight inline code */
+}
+
+html[data-theme='dark'] body {
+  color: var(--ifm-font-color-base);
+}
+
+/* Link styling */
+a {
+  color: var(--ifm-color-primary);
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+a:hover {
+  color: var(--ifm-color-primary-dark);
+  text-decoration: underline;
+}
+
+html[data-theme='dark'] a {
+  color: var(--ifm-color-primary-light);
+}
+html[data-theme='dark'] a:hover {
+  color: var(--ifm-color-primary-lighter);
+}
+
+/* Custom button styles */
+.button--primary {
+  background-color: var(--ifm-color-primary);
+  border-color: var(--ifm-color-primary);
+  color: white;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.button--primary:hover {
+  background-color: var(--ifm-color-primary-dark);
+  border-color: var(--ifm-color-primary-dark);
+}
+
+.button--secondary {
+  background: var(--ifm-color-secondary);
+  color: white;
+  border: none;
+  transition: background 0.3s ease;
+}
+
+.button--secondary:hover {
+  background: var(--ifm-color-secondary-dark);
+}
+
+/* Custom Animations */
+@keyframes fadeInDown {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-down {
+  animation: fadeInDown 1s ease-out forwards;
+}
+
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 1s ease-out forwards;
+  animation-delay: 0.5s; /* Delay for staggered effect */
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 1s ease-out forwards;
+  animation-delay: 1s; /* Delay for staggered effect */
+}
+
+/* Staggered animation delays */
+.delay-100 { animation-delay: 0.1s; }
+.delay-200 { animation-delay: 0.2s; }
+.delay-300 { animation-delay: 0.3s; }
+.delay-400 { animation-delay: 0.4s; }
+.delay-500 { animation-delay: 0.5s; }
+.delay-600 { animation-delay: 0.6s; }
+.delay-700 { animation-delay: 0.7s; }
+.delay-800 { animation-delay: 0.8s; }
+.delay-900 { animation-delay: 0.9s; }
+.delay-1000 { animation-delay: 1s; }
+
+/* Additional utility classes (for text gradients, etc.) */
+.text-gradient-to-r {
+  background-image: linear-gradient(to right, var(--ifm-color-primary), var(--ifm-color-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}

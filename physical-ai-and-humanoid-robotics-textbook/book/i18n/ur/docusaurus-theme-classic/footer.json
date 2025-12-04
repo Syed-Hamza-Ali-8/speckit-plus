@@ -1,0 +1,42 @@
+{
+  "link.title.Docs": {
+    "message": "دستاویزات",
+    "description": "The title of the footer links column with title=Docs in the footer"
+  },
+  "link.title.Community": {
+    "message": "کمیونٹی",
+    "description": "The title of the footer links column with title=Community in the footer"
+  },
+  "link.title.More": {
+    "message": "مزید",
+    "description": "The title of the footer links column with title=More in the footer"
+  },
+  "link.item.label.Book": {
+    "message": "کتاب",
+    "description": "The label of footer link with label=Book linking to /docs/module-1/ros-overview"
+  },
+  "link.item.label.Stack Overflow": {
+    "message": "اسٹیک اوور فلو",
+    "description": "The label of footer link with label=Stack Overflow linking to https://stackoverflow.com/questions/tagged/docusaurus"
+  },
+  "link.item.label.Discord": {
+    "message": "ڈسکارڈ",
+    "description": "The label of footer link with label=Discord linking to https://discordapp.com/invite/docusaurus"
+  },
+  "link.item.label.X": {
+    "message": "ایکس",
+    "description": "The label of footer link with label=X linking to https://x.com/docusaurus"
+  },
+  "link.item.label.Blog": {
+    "message": "بلاگ",
+    "description": "The label of footer link with label=Blog linking to /blog"
+  },
+  "link.item.label.GitHub": {
+    "message": "گٹ ہب",
+    "description": "The label of footer link with label=GitHub linking to https://github.com/panaversity/physical-ai-and-humanoid-robotics-textbook"
+  },
+  "copyright": {
+    "message": "کاپی رائٹ © 2025 پیناورسٹی۔ ڈوکوسورس کے ساتھ بنایا گیا۔",
+    "description": "The footer copyright"
+  }
+}

@@ -1,0 +1,56 @@
+<svg width="600" height="300" viewBox="0 0 600 300" xmlns="http://www.w3.org/2000/svg">
+  <!-- Styles -->
+  <style>
+    .node-box {
+      fill: #e0f2f7; /* Light blue */
+      stroke: #007bff; /* Blue */
+      stroke-width: 2;
+    }
+    .topic-box {
+      fill: #d4edda; /* Light green */
+      stroke: #28a745; /* Green */
+      stroke-width: 2;
+    }
+    .text {
+      font-family: sans-serif;
+      font-size: 16px;
+      fill: #343a40; /* Dark gray */
+      text-anchor: middle;
+      dominant-baseline: middle;
+    }
+    .arrow {
+      stroke: #6c757d; /* Gray */
+      stroke-width: 2;
+      marker-end: url(#arrowhead);
+    }
+  </style>
+
+  <!-- Arrowhead definition -->
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" 
+            refX="0" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#6c757d" />
+    </marker>
+  </defs>
+
+  <!-- Publisher Node -->
+  <rect x="50" y="120" width="120" height="60" rx="10" ry="10" class="node-box" />
+  <text x="110" y="150" class="text">Publisher Node</text>
+
+  <!-- Topic -->
+  <rect x="240" y="120" width="120" height="60" rx="10" ry="10" class="topic-box" />
+  <text x="300" y="150" class="text">Topic</text>
+
+  <!-- Subscriber Node 1 -->
+  <rect x="430" y="50" width="120" height="60" rx="10" ry="10" class="node-box" />
+  <text x="490" y="80" class="text">Subscriber 1</text>
+
+  <!-- Subscriber Node 2 -->
+  <rect x="430" y="190" width="120" height="60" rx="10" ry="10" class="node-box" />
+  <text x="490" y="220" class="text">Subscriber 2</text>
+
+  <!-- Arrows -->
+  <line x1="170" y1="150" x2="240" y2="150" class="arrow" />
+  <line x1="360" y1="150" x2="430" y2="80" class="arrow" />
+  <line x1="360" y1="150" x2="430" y2="220" class="arrow" />
+</svg>

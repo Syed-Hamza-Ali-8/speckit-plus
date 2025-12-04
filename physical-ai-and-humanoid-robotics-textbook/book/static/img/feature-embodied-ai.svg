@@ -1,0 +1,30 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="embodiedAiGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#a78bfa;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+    </linearGradient>
+    <filter id="featureGlow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Base shape (humanoid torso/head outline) -->
+  <path d="M100 20 C130 20, 160 50, 160 80 V180 H40 V80 C40 50, 70 20, 100 20 Z" fill="url(#embodiedAiGradient)" filter="url(#featureGlow)"/>
+
+  <!-- Robotic Arm detail -->
+  <rect x="140" y="70" width="30" height="80" rx="5" ry="5" fill="#3b82f6" transform="rotate(20 155 110)"/>
+  <circle cx="155" cy="80" r="10" fill="#c084fc"/>
+  <circle cx="155" cy="140" r="10" fill="#c084fc"/>
+
+  <!-- AI Brain / Circuitry lines -->
+  <line x1="70" y1="60" x2="130" y2="60" stroke="#fcd34d" stroke-width="2" />
+  <line x1="70" y1="80" x2="130" y2="80" stroke="#fcd34d" stroke-width="2" />
+  <line x1="70" y1="60" x2="70" y2="80" stroke="#fcd34d" stroke-width="2" />
+  <line x1="130" y1="60" x2="130" y2="80" stroke="#fcd34d" stroke-width="2" />
+  <circle cx="100" cy="70" r="5" fill="#fcd34d" />
+</svg>

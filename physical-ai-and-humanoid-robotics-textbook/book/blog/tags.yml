@@ -1,0 +1,39 @@
+physical-ai:
+  label: Physical AI
+  permalink: /tags/physical-ai
+  description: Posts related to Physical Artificial Intelligence.
+
+embodied-ai:
+  label: Embodied AI
+  permalink: /tags/embodied-ai
+  description: Posts related to Embodied Artificial Intelligence.
+
+robotics:
+  label: Robotics
+  permalink: /tags/robotics
+  description: Posts about robotics in general.
+
+ros2:
+  label: ROS 2
+  permalink: /tags/ros2
+  description: Posts focusing on Robot Operating System 2.
+
+middleware:
+  label: Middleware
+  permalink: /tags/middleware
+  description: Posts about robotics middleware.
+
+simulation:
+  label: Simulation
+  permalink: /tags/simulation
+  description: Posts about robotics simulation.
+
+digital-twin:
+  label: Digital Twin
+  permalink: /tags/digital-twin
+  description: Posts about digital twin technology.
+
+isaac-sim:
+  label: Isaac Sim
+  permalink: /tags/isaac-sim
+  description: Posts focusing on NVIDIA Isaac Sim.

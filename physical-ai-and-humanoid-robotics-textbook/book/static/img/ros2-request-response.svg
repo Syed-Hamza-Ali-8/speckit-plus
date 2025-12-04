@@ -1,0 +1,51 @@
+<svg width="600" height="200" viewBox="0 0 600 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Styles -->
+  <style>
+    .node-box {
+      fill: #e0f2f7; /* Light blue */
+      stroke: #007bff; /* Blue */
+      stroke-width: 2;
+    }
+    .service-box {
+      fill: #f8d7da; /* Light red/pink */
+      stroke: #dc3545; /* Red */
+      stroke-width: 2;
+    }
+    .text {
+      font-family: sans-serif;
+      font-size: 16px;
+      fill: #343a40; /* Dark gray */
+      text-anchor: middle;
+      dominant-baseline: middle;
+    }
+    .arrow {
+      stroke: #6c757d; /* Gray */
+      stroke-width: 2;
+      marker-end: url(#arrowhead);
+    }
+  </style>
+
+  <!-- Arrowhead definition -->
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" 
+            refX="0" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#6c757d" />
+    </marker>
+  </defs>
+
+  <!-- Client Node -->
+  <rect x="50" y="70" width="120" height="60" rx="10" ry="10" class="node-box" />
+  <text x="110" y="100" class="text">Client Node</text>
+
+  <!-- Service Server Node -->
+  <rect x="430" y="70" width="120" height="60" rx="10" ry="10" class="node-box" />
+  <text x="490" y="100" class="text">Service Server</text>
+
+  <!-- Request Arrow -->
+  <line x1="170" y1="85" x2="430" y2="85" class="arrow" />
+  <text x="300" y="75" class="text">Request</text>
+
+  <!-- Response Arrow -->
+  <line x1="430" y1="115" x2="170" y2="115" class="arrow" />
+  <text x="300" y="125" class="text">Response</text>
+</svg>

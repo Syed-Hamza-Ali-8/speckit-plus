@@ -1,0 +1,61 @@
+<svg width="1920" height="1080" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="heroGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e3a8a;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#4a0e7f;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1e3a8a;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="5" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <radialGradient id="neuralGlow" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+      <stop offset="0%" style="stop-color:#8b5cf6;stop-opacity:0.8" />
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:0" />
+    </radialGradient>
+  </defs>
+
+  <rect width="100%" height="100%" fill="url(#heroGradient)"/>
+
+  <!-- Abstract Neural Network / AI Brain elements -->
+  <g opacity="0.4" filter="url(#glow)">
+    <circle cx="500" cy="300" r="100" fill="url(#neuralGlow)" />
+    <circle cx="1400" cy="700" r="120" fill="url(#neuralGlow)" />
+    <circle cx="200" cy="800" r="80" fill="url(#neuralGlow)" />
+    <circle cx="1700" cy="200" r="90" fill="url(#neuralGlow)" />
+    <circle cx="960" cy="540" r="150" fill="url(#neuralGlow)" />
+
+    <line x1="500" y1="300" x2="960" y2="540" stroke="#a78bfa" stroke-width="2" />
+    <line x1="1400" y1="700" x2="960" y2="540" stroke="#a78bfa" stroke-width="2" />
+    <line x1="200" y1="800" x2="960" y2="540" stroke="#a78bfa" stroke-width="2" />
+    <line x1="1700" y1="200" x2="960" y2="540" stroke="#a78bfa" stroke-width="2" />
+    <line x1="500" y1="300" x2="1700" y2="200" stroke="#a78bfa" stroke-width="1" />
+  </g>
+
+  <!-- Robotic / Circuitry elements -->
+  <g opacity="0.3">
+    <path d="M100 100 L300 100 L250 150 L150 150 Z" fill="#3b82f6" stroke="#60a5fa" stroke-width="2" />
+    <path d="M1600 900 L1800 900 L1750 950 L1650 950 Z" fill="#3b82f6" stroke="#60a5fa" stroke-width="2" />
+    <path d="M1800 100 L1600 100 L1650 150 L1850 150 Z" fill="#3b82f6" stroke="#60a5fa" stroke-width="2" />
+    <path d="M100 900 L300 900 L250 950 L150 950 Z" fill="#3b82f6" stroke="#60a5fa" stroke-width="2" />
+
+    <rect x="700" y="100" width="50" height="200" rx="5" ry="5" fill="#a78bfa" />
+    <rect x="750" y="150" width="100" height="50" rx="5" ry="5" fill="#8b5cf6" />
+    <circle cx="800" cy="175" r="10" fill="#c084fc" />
+
+    <rect x="1100" y="780" width="50" height="200" rx="5" ry="5" fill="#a78bfa" transform="rotate(180 1125 880)"/>
+    <rect x="1000" y="750" width="100" height="50" rx="5" ry="5" fill="#8b5cf6" transform="rotate(180 1050 775)"/>
+    <circle cx="1050" cy="775" r="10" fill="#c084fc" />
+  </g>
+
+  <!-- subtle particles / stars -->
+  <circle cx="100" cy="500" r="2" fill="white" opacity="0.6"/>
+  <circle cx="300" cy="150" r="1" fill="white" opacity="0.6"/>
+  <circle cx="1500" cy="900" r="3" fill="white" opacity="0.6"/>
+  <circle cx="1800" cy="500" r="2" fill="white" opacity="0.6"/>
+  <circle cx="600" cy="900" r="1" fill="white" opacity="0.6"/>
+  <circle cx="1200" cy="100" r="2" fill="white" opacity="0.6"/>
+</svg>

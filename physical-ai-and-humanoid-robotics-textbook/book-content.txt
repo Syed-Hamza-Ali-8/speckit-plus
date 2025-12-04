@@ -1,0 +1,231 @@
+# Physical AI & Humanoid Robotics
+## Focus and Theme
+
+**AI Systems in the Physical World — Embodied Intelligence**
+This course bridges the gap between the digital brain and the physical body, enabling students to apply AI knowledge to control humanoid robots in both simulated and real environments.
+
+## Quarter Overview
+
+The future of AI extends beyond digital spaces into the physical world.
+This capstone quarter introduces Physical AI—AI systems that operate in real environments and understand physical laws.
+
+Students will learn to:
+
+*   Design, simulate, and deploy humanoid robots
+*   Use ROS 2, Gazebo, and NVIDIA Isaac
+*   Develop systems capable of natural human–robot interaction
+
+## Modules
+### Module 1: The Robotic Nervous System (ROS 2)
+
+**Focus:** Middleware for robot control.
+
+**Topics**
+
+*   ROS 2 Nodes, Topics, and Services
+*   Bridging Python agents to ROS controllers using rclpy
+*   Understanding URDF (Unified Robot Description Format)
+*   Creating control pipelines for humanoids
+
+### Module 2: The Digital Twin (Gazebo & Unity)
+
+**Focus:** Physics simulation and environment building.
+
+**Topics**
+
+*   Physics simulation, collisions, and gravity in Gazebo
+*   High-fidelity rendering and HRI in Unity
+*   Simulating LiDAR, Depth Cameras, and IMUs
+*   Creating realistic robotic digital twins
+
+### Module 3: The AI-Robot Brain (NVIDIA Isaac™)
+
+**Focus:** Advanced perception and AI-powered training.
+
+**Topics**
+
+*   Isaac Sim for photorealistic simulation
+*   Synthetic data generation
+*   Isaac ROS for hardware-accelerated VSLAM and navigation
+*   Nav2 for path planning and bipedal motion
+
+### Module 4: Vision-Language-Action (VLA)
+
+**Focus:** Convergence of LLMs and Robotics.
+
+**Topics**
+
+*   Voice-to-Action with OpenAI Whisper
+*   LLM-based cognitive planning
+*   Convert tasks like "Clean the room" into ROS 2 action sequences
+*   Capstone: Build an autonomous humanoid
+    *   Receives a voice command
+    *   Plans its path
+    *   Navigates obstacles
+    *   Identifies an object
+    *   Manipulates it
+
+## Why Physical AI Matters
+
+Humanoid robots are poised to thrive in human-centered environments because:
+
+*   They share our physical form factor
+*   They can be trained using abundant real-world data
+*   They represent the next stage of AI evolution:
+    *   From digital intelligence → to embodied intelligence
+
+Physical AI marks a shift from AI models confined to screens to intelligent systems operating in real physical space.
+
+## Learning Outcomes
+
+Students completing this course will be able to:
+
+*   Understand Physical AI and embodied intelligence
+*   Build and control robots using ROS 2
+*   Simulate robots with Gazebo and Unity
+*   Use NVIDIA Isaac for AI perception and robotics
+*   Design humanoid robots for natural interactions
+*   Integrate GPT models for conversational robotics
+
+## Weekly Breakdown
+### Weeks 1–2: Introduction to Physical AI
+
+*   Foundations of embodied intelligence
+*   From digital AI to physical-world AI
+*   Overview of humanoid robot types
+*   Sensors: LiDAR, Cameras, IMUs, Force/Torque sensors
+
+### Weeks 3–5: ROS 2 Fundamentals
+
+*   ROS 2 architecture
+*   Nodes, Topics, Services, Actions
+*   Building ROS 2 packages with Python
+*   Launch files & parameter management
+
+### Weeks 6–7: Robot Simulation with Gazebo
+
+*   Setting up Gazebo simulation
+*   URDF and SDF robot model formats
+*   Physics simulation
+*   Sensor simulation
+*   Intro to Unity for visualization
+
+### Weeks 8–10: NVIDIA Isaac Platform
+
+*   Isaac SDK and Isaac Sim
+*   Perception pipelines and manipulation
+*   Reinforcement learning for robotics
+*   Sim-to-Real transfer
+
+### Weeks 11–12: Humanoid Robot Development
+
+*   Humanoid kinematics and dynamics
+*   Bipedal locomotion and balance control
+*   Grasping and manipulation
+*   Designing natural human-robot interaction
+
+### Week 13: Conversational Robotics
+
+*   Integrating GPT models with robots
+*   Speech recognition + NLU
+*   Multimodal interactions (speech + gesture + vision)
+
+## Assessments
+
+*   ROS 2 package development
+*   Gazebo simulation project
+*   Isaac-based perception pipeline
+*   Capstone: Fully autonomous humanoid robot
+
+## Hardware Requirements
+
+This course is computationally intensive across:
+
+*   Physics simulation
+*   Visual perception
+*   Generative AI
+
+The capstone requires a simulated humanoid and optionally real-world robotic deployment.
+
+### 1. The "Digital Twin" Workstation (Required per Student)
+**Minimum Requirements**
+
+*   **GPU:** RTX 4070 Ti (12GB VRAM)
+*   **Recommended:** RTX 3090/4090 (24GB VRAM)
+*   **CPU:** Intel Core i7 (13th+) / Ryzen 9
+
+*   **RAM:** 64 GB DDR5 (32 GB minimum)
+*   **OS:** Ubuntu 22.04 LTS
+
+**Note:** Isaac Sim requires RTX GPUs. ROS 2 runs best on Linux.
+
+### 2. The "Physical AI" Edge Kit
+
+Used to deploy AI to real sensors and actuators.
+
+**Components**
+
+*   Jetson Orin Nano 8GB or Orin NX 16GB
+*   Intel RealSense D435i (with IMU)
+*   USB IMU (BNO055)
+*   ReSpeaker USB Mic Array (v2.0)
+
+This teaches real-world perception, SLAM, and VLA.
+
+### 3. The Robot Lab Options
+#### Option A: Proxy Robots (Budget-Friendly)
+
+*   **Unitree Go2 Edu**
+*   **Pros:** Durable, affordable, ROS 2 compatible
+*   **Cons:** Not humanoid
+
+#### Option B: Miniature Humanoids
+
+*   Unitree G1 (~$16k)
+*   Robotis OP3 (~$12k)
+*   Hiwonder TonyPi Pro (~$600, limited AI)
+
+#### Option C: Premium Lab (Humanoid Deployment)
+
+*   Unitree G1 Humanoid
+    One of the few real humanoids suitable for student deployment.
+
+### 4. Summary of Architecture
+| Component     | Hardware                    | Function                            |
+| :------------ | :-------------------------- | :---------------------------------- |
+| Sim Rig       | RTX 4080 + Ubuntu 22.04     | Runs Isaac Sim, Gazebo, Unity, VLA models |
+| Edge Brain    | Jetson Orin Nano            | Runs inference and ROS 2 stack      |
+| Sensors       | RealSense + LiDAR           | Provides real-world data            |
+| Actuator      | Unitree Go2/G1              | Executes motor commands             |
+
+### Cloud Option: The "Ether Lab" (High OpEx)
+#### 1. Cloud Workstations
+
+*   AWS g5.2xlarge or g6e.xlarge
+*   Isaac Sim on Omniverse Cloud
+*   ~$1.50/hr (total ~$205 per quarter)
+
+#### 2. Local Edge Hardware
+
+*   Jetson Kit still required
+*   At least one physical robot for final deployment
+
+### The Economy Jetson Student Kit
+| Component | Model                     | Price   | Notes            |
+| :-------- | :------------------------ | :------ | :--------------- |
+| Brain     | Jetson Orin Nano Super Dev Kit (8GB) | $249    | 40 TOPS compute  |
+| Eyes      | RealSense D435i           | $349    | RGB + Depth + IMU |
+| Ears      | ReSpeaker USB Mic Array   | $69     | For Whisper      |
+| Storage   | 128GB microSD + cables    | $30     | High endurance   |
+| **Total** |                           | **~$700** |                  |
+
+### The Latency Trap
+
+Cloud simulation works well,
+but controlling a physical robot from the cloud is unsafe due to latency.
+
+**Solution**
+
+*   Train models in the cloud
+*   Download weights
+*   Flash to local Jetson for real-time control
