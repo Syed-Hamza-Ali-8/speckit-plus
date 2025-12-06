@@ -1,26 +1,28 @@
-// 🚀 Out-of-the-box NEXT-LEVEL UI for Book RAG Chatbot
-// Theme: Physical AI & Humanoid Robotics
-// Features: 3D metallic UI, robot avatar, page-flip animation, mobile optimized, premium design
-
-import React, { useState, useRef, useEffect } from 'react';
-import clsx from 'clsx';
+import React, { useState, useEffect, useRef } from 'react';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 
 interface ChatMessage {
+  id: string;
   text: string;
   sender: 'user' | 'bot';
-  timestamp: string;
+  createdAt: Date;
 }
 
 export default function ChatbotWidget() {
   const { siteConfig: { customFields } } = useDocusaurusContext();
-
-  const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    {
+      id: '1',
+      text: "Hello! I'm your Physical AI & Robotics tutor. How can I help you with the book content?",
+      sender: 'bot',
+      createdAt: new Date()
+    }
+  ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [selectedText, setSelectedText] = useState('');
-  const messagesEndRef = useRef(null);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   const API_BASE_URL = customFields.API_BASE_URL as string;
 
@@ -33,33 +35,33 @@ export default function ChatbotWidget() {
       const selection = window.getSelection()?.toString().trim();
       if (selection) {
         setSelectedText(selection);
-        setIsOpen(true);
+        setIsChatOpen(true);
       }
     };
     document.addEventListener('mouseup', handleMouseUp);
     return () => document.removeEventListener('mouseup', handleMouseUp);
   }, []);
 
-  const handleSendMessage = async (e?: any) => {
-    e?.preventDefault();
+  const handleSendMessage = async () => {
     if (!input.trim() && !selectedText.trim()) return;
 
     const userMessage: ChatMessage = {
+      id: Date.now().toString(),
       text: input || `Question about: "${selectedText}"`,
       sender: 'user',
-      timestamp: new Date().toLocaleTimeString(),
+      createdAt: new Date(),
     };
 
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
 
-    const endpoint = selectedText ? `${API_BASE_URL}/query_selected_text` : `${API_BASE_URL}/chat`;
-    const body = selectedText
-      ? JSON.stringify({ selected_text: selectedText, user_question: input })
-      : JSON.stringify({ query: input });
-
     try {
+      const endpoint = selectedText ? `${API_BASE_URL}/query_selected_text` : `${API_BASE_URL}/chat`;
+      const body = selectedText
+        ? JSON.stringify({ selected_text: selectedText, user_question: input })
+        : JSON.stringify({ query: input });
+
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -68,121 +70,144 @@ export default function ChatbotWidget() {
 
       const data = await response.json();
 
-      setMessages(prev => [
-        ...prev,
-        { text: data.response, sender: 'bot', timestamp: new Date().toLocaleTimeString() },
-      ]);
-    } catch {
-      setMessages(prev => [
-        ...prev,
-        { text: 'Connection error. Try again later.', sender: 'bot', timestamp: new Date().toLocaleTimeString() },
-      ]);
+      const botMessage: ChatMessage = {
+        id: Date.now().toString(),
+        text: data.response,
+        sender: 'bot',
+        createdAt: new Date(),
+      };
+
+      setMessages(prev => [...prev, botMessage]);
+    } catch (error) {
+      const errorMessage: ChatMessage = {
+        id: Date.now().toString(),
+        text: 'Connection error. Try again later.',
+        sender: 'bot',
+        createdAt: new Date(),
+      };
+      setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
       setSelectedText('');
     }
   };
 
-  const toggleChatbot = () => setIsOpen(!isOpen);
+  const toggleChat = () => setIsChatOpen(!isChatOpen);
 
-  return (
-    <>
-      {/* Floating Robotics Button */}
-      <button
-        onClick={toggleChatbot}
-        className={clsx(
-          'fixed bottom-6 right-6 z-[9999] p-4 rounded-full shadow-xl transition-all duration-500',
-          'bg-gradient-to-br from-gray-900 to-gray-700 hover:scale-110 hover:shadow-2xl',
-          'border border-gray-500/50 backdrop-blur-xl',
-          'text-cyan-300 font-semibold tracking-widest',
-          isOpen ? 'rotate-45' : 'rotate-0'
-        )}
-      >
-        {isOpen ? '✕' : '🤖'}
-      </button>
-
-      {/* Chat Window */}
-      <div
-        className={clsx(
-          'fixed bottom-24 right-6 z-[9999] w-[380px] h-[560px] rounded-xl overflow-hidden transition-all duration-500',
-          'bg-gradient-to-br from-gray-950 via-gray-900 to-gray-800',
-          'border border-gray-700/60 shadow-2xl backdrop-blur-2xl',
-          'transform-gpu',
-          isOpen ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-10 scale-95 pointer-events-none'
-        )}
-      >
+  if (isChatOpen) {
+    // Full screen chat interface
+    return (
+      <div className="fixed inset-0 z-[9999] bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white">
         {/* Header */}
-        <div className="p-4 bg-gradient-to-r from-purple-700 to-blue-600 flex items-center justify-between shadow-lg">
-          <div>
-            <h3 className="text-white font-bold text-lg">Physical AI & Robotics</h3>
-            <p className="text-purple-200 text-xs">Your Book AI Tutor</p>
+        <div className="p-6 bg-gradient-to-r from-purple-800 to-blue-800 border-b border-white/20 flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 flex items-center justify-center shadow-lg">
+              <span className="text-white font-bold text-sm">AI</span>
+            </div>
+            <div>
+              <h1 className="font-bold text-2xl">Physical AI Tutor</h1>
+              <p className="text-purple-200 text-sm">Expert in Robotics & AI</p>
+            </div>
           </div>
-          <span className="text-white text-xl cursor-pointer" onClick={toggleChatbot}>✕</span>
-        </div>
-
-        {/* Messages */}
-        <div className="flex-1 p-4 overflow-y-auto space-y-4 custom-scrollbar">
-          {messages.map((msg, i) => (
-            <div key={i} className={clsx('flex items-end', msg.sender === 'user' ? 'justify-end' : 'justify-start')}>
-
-              {/* Robotic Avatar */}
-              {msg.sender === 'bot' && (
-                <img
-                  src="https://cdn-icons-png.flaticon.com/512/4712/4712100.png"
-                  className="w-10 h-10 rounded-full mr-3 shadow-md"
-                />
-              )}
-
-              {/* Message Bubble */}
-              <div
-                className={clsx(
-                  'max-w-[72%] p-3 rounded-2xl text-sm shadow-xl backdrop-blur-md',
-                  msg.sender === 'user'
-                    ? 'bg-gradient-to-br from-blue-600 to-purple-700 text-white rounded-br-none'
-                    : 'bg-gray-200/20 text-gray-100 border border-gray-500/30 rounded-bl-none'
-                )}
-              >
-                {msg.text}
-                <span className="block text-[10px] opacity-70 mt-1">{msg.timestamp}</span>
-              </div>
-            </div>
-          ))}
-
-          {/* Typing Indicator */}
-          {isLoading && (
-            <div className="flex items-center space-x-2 text-gray-200">
-              <img
-                src="https://cdn-icons-png.flaticon.com/512/4712/4712100.png"
-                className="w-8 h-8 rounded-full"
-              />
-              <div className="flex space-x-1 p-3 rounded-xl bg-gray-700/50 border border-gray-600/40 animate-pulse">
-                <span className="w-2 h-2 rounded-full bg-gray-300 animate-bounce"></span>
-                <span className="w-2 h-2 rounded-full bg-gray-300 animate-bounce delay-150"></span>
-                <span className="w-2 h-2 rounded-full bg-gray-300 animate-bounce delay-300"></span>
-              </div>
-            </div>
-          )}
-
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Input */}
-        <form onSubmit={handleSendMessage} className="p-4 flex items-center space-x-2 bg-gray-900/60 border-t border-gray-700/50">
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder={selectedText ? `Ask about "${selectedText}"...` : 'Ask anything from the book...'}
-            className="flex-1 p-3 rounded-xl bg-gray-800 text-gray-200 border border-gray-700 focus:ring-2 focus:ring-cyan-400 outline-none"
-          />
-
           <button
-            type="submit"
-            className="p-3 px-4 rounded-xl bg-gradient-to-br from-cyan-600 to-blue-700 text-white font-bold hover:scale-105 transition-all shadow-lg"
+            onClick={() => setIsChatOpen(false)}
+            className="text-white hover:text-gray-300 text-3xl font-bold transition-colors p-2"
           >
-            ➤
+            ✕
           </button>
-        </form>
+        </div>
+
+        {/* Messages Area */}
+        <div className="flex-1 flex flex-col h-[calc(100vh-150px)]">
+          <div className="flex-1 p-6 overflow-y-auto space-y-6 custom-scrollbar">
+            {messages.map((msg) => (
+              <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`flex items-start gap-4 max-w-[80%] ${msg.sender === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+
+                  {/* Avatar */}
+                  {msg.sender === 'bot' && (
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 flex items-center justify-center shadow-lg flex-shrink-0">
+                      <span className="text-white text-xs font-bold">AI</span>
+                    </div>
+                  )}
+
+                  {/* Message Bubble */}
+                  <div className={`rounded-2xl px-5 py-4 ${
+                    msg.sender === 'user'
+                      ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-br-md'
+                      : 'bg-white/10 text-white rounded-bl-md border border-white/20 backdrop-blur-sm'
+                  }`}>
+                    <p className="text-base whitespace-pre-wrap leading-relaxed">{msg.text}</p>
+                    <p className="text-xs opacity-70 mt-2 text-right">
+                      {msg.createdAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {/* Loading Indicator */}
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="flex items-start gap-4 max-w-[80%]">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-r from-cyan-400 to-blue-500 flex items-center justify-center shadow-lg flex-shrink-0">
+                    <span className="text-white text-xs font-bold">AI</span>
+                  </div>
+                  <div className="bg-white/10 text-white rounded-2xl px-5 py-4 rounded-bl-md border border-white/20 backdrop-blur-sm">
+                    <div className="flex space-x-2">
+                      <div className="w-3 h-3 bg-purple-300 rounded-full animate-bounce"></div>
+                      <div className="w-3 h-3 bg-purple-300 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="w-3 h-3 bg-purple-300 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Input Area */}
+          <div className="p-6 bg-white/5 border-t border-white/20">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSendMessage();
+              }}
+              className="flex items-center space-x-4"
+            >
+              <input
+                type="text"
+                placeholder={selectedText ? `Ask about: "${selectedText.substring(0, 30)}..."` : 'Ask anything about the book...'}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                className="flex-1 bg-white/10 text-white border border-white/30 rounded-xl px-5 py-4 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent placeholder:text-gray-400 backdrop-blur-sm text-lg"
+                disabled={isLoading}
+              />
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="p-4 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M22 2L11 13" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            </form>
+          </div>
+        </div>
       </div>
-    </>
-  );
+    );
+  } else {
+    // Floating chat button only
+    return (
+      <button
+        onClick={toggleChat}
+        className="fixed bottom-6 right-6 z-[9999] p-5 rounded-full shadow-2xl transition-transform duration-300 bg-gradient-to-br from-purple-600 via-pink-600 to-blue-600 hover:scale-110 text-white font-bold border-4 border-white flex items-center justify-center cursor-pointer"
+        style={{ width: '70px', height: '70px', fontSize: '24px' }}
+      >
+        🤖
+      </button>
+    );
+  }
 }

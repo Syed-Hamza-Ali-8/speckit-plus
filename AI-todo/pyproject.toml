@@ -1,0 +1,16 @@
+[project]
+name = "todo-console-app"
+version = "0.1.0"
+description = "A command-line todo application with in-memory storage"
+authors = [{name = "Developer", email = "dev@example.com"}]
+requires-python = ">=3.13"
+readme = "README.md"
+license = {text = "MIT"}
+
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]

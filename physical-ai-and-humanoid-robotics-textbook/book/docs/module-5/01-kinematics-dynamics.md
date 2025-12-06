@@ -1,6 +1,8 @@
----
+<!-- ---
 sidebar_position: 1
 ---
+
+import "katex/dist/katex.min.css";
 
 # Humanoid Robot Kinematics and Dynamics
 
@@ -14,9 +16,11 @@ Kinematics describes the motion of a robot without considering the forces and to
 
 **Forward Kinematics** is the process of calculating the position and orientation of the robot's end-effectors given the joint angles (or positions for prismatic joints). For a humanoid, this means determining where its hands or feet are in space if you know all the joint angles in its arm or leg chain.
 
-Mathematically, for a serial chain robot with $n$ joints, the transformation from the base frame to the end-effector frame, $T_{end}$, can be found by multiplying a series of transformation matrices, $T_i$, each representing a joint and link:
+Mathematically, for a serial chain robot with $n$ joints, the transformation from the base frame to the end-effector frame can be found by multiplying a series of transformation matrices, each representing a joint and link:
 
-$$T_{end} = T_1(q_1) T_2(q_2) \dots T_n(q_n)$$
+$$
+T_{\text{end}} = T_1(q_1) \, T_2(q_2) \, \cdots \, T_n(q_n)
+$$
 
 where $q_i$ is the $i$-th joint variable (angle or displacement). These transformations are typically derived using methods like Denavit-Hartenberg (DH) parameters or product of exponentials (PoE) formula.
 
@@ -30,9 +34,11 @@ where $q_i$ is the $i$-th joint variable (angle or displacement). These transfor
 
 Analytical solutions for IK exist only for simple kinematic chains. For complex humanoids with many degrees of freedom (redundant manipulators), numerical methods (e.g., Jacobian-based methods, optimization algorithms) are typically used.
 
-The Jacobian matrix, $J$, relates joint velocities ($\dot{q}$) to end-effector velocities ($\dot{x}$):
+The Jacobian matrix $J$ relates joint velocities ($\dot{q}$) to end-effector velocities ($\dot{x}$):
 
-$$\dot{x} = J(q) \dot{q}$$
+$$
+\dot{x} = J(q) \, \dot{q}
+$$
 
 Solving for $\dot{q}$ given a desired $\dot{x}$ allows iterative movement towards a target pose.
 
@@ -44,9 +50,12 @@ Dynamics deals with the relationship between forces, torques, and the resulting 
 
 **Forward Dynamics** calculates the resulting accelerations of the robot's links given the applied joint torques and external forces. This is what a physics simulator like Gazebo or Isaac Sim does:
 
-$$\tau = M(q)\ddot{q} + C(q, \dot{q}) + G(q)$$
+$$
+\tau = M(q) \, \ddot{q} + C(q, \dot{q}) + G(q)
+$$
 
 where:
+
 *   $\tau$ is the vector of joint torques.
 *   $M(q)$ is the mass matrix (inertia matrix).
 *   $\ddot{q}$ is the vector of joint accelerations.
@@ -55,18 +64,18 @@ where:
 
 ### 2. Inverse Dynamics
 
-**Inverse Dynamics** is the problem of calculating the joint torques required to achieve a desired motion (joint positions, velocities, and accelerations). This is critical for robot control:
+**Inverse Dynamics** calculates the joint torques required to achieve a desired motion (joint positions, velocities, and accelerations). This is critical for robot control:
 
-*   **Trajectory Tracking:** If you want a robot arm to follow a specific path, inverse dynamics tells you the torques each joint motor needs to apply at every moment.
-*   **Balance Control:** For humanoids, inverse dynamics is used in whole-body control to compute the ground reaction forces and joint torques needed to maintain balance and execute desired movements.
+*   **Trajectory Tracking:** Determines the torques each joint motor must apply at every moment.
+*   **Balance Control:** Used in whole-body control to compute ground reaction forces and joint torques needed to maintain balance and execute movements.
 
 ## Why Kinematics and Dynamics are Crucial for Humanoids
 
 Humanoid robots are inherently unstable and have high degrees of freedom. Precise control requires a deep understanding of their kinematics and dynamics:
 
-*   **Balance:** Every movement a humanoid makes affects its center of mass and its stability. Dynamic models are used to predict and counteract forces that could cause a fall. Concepts like the Zero Moment Point (ZMP) are derived from dynamic analysis.
-*   **Locomotion:** Generating stable walking gaits involves solving complex inverse kinematics problems for foot placement and inverse dynamics problems for joint torques.
-*   **Manipulation:** Reaching for and grasping objects requires accurate kinematic calculations to position the hand and dynamic models to apply appropriate forces without overshooting or causing damage.
-*   **Sim-to-Real Transfer:** Accurate dynamic models are critical for making simulations behave like real robots, ensuring that control strategies developed in simulation work on physical hardware.
+*   **Balance:** Every movement affects the center of mass and stability. Dynamic models predict and counteract forces that could cause a fall.
+*   **Locomotion:** Generating stable walking gaits involves solving complex inverse kinematics and inverse dynamics problems.
+*   **Manipulation:** Reaching and grasping objects requires accurate kinematic calculations and dynamic force control.
+*   **Sim-to-Real Transfer:** Ensures simulations reflect real-world behavior for effective control strategies.
 
-In the next chapter, we will build upon these foundational concepts to explore the intricate world of bipedal locomotion and balance control.
+In the next chapter, we will build upon these foundational concepts to explore bipedal locomotion and balance control. -->

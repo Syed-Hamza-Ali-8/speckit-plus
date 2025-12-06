@@ -117,34 +117,6 @@ const config: Config = {
               label: 'Book',
               to: '/docs/intro',
             },
-            {
-              label: 'Module 1: Introduction to Physical AI',
-              to: '/docs/module-0/01-foundations',
-            },
-            {
-              label: 'Module 2: The Robotic Nervous System (ROS 2)',
-              to: '/docs/module-1/ros-overview',
-            },
-            {
-              label: 'Module 3: The Digital Twin (Gazebo & Unity)',
-              to: '/docs/module-2/01-digital-twin-overview',
-            },
-            {
-              label: 'Module 4: The AI-Robot Brain (NVIDIA Isaac™)',
-              to: '/docs/module-3/01-nvidia-isaac-overview',
-            },
-            {
-              label: 'Module 5: Vision-Language-Action (VLA)',
-              to: '/docs/module-4/01-vla-overview',
-            },
-            {
-              label: 'Module 6: Humanoid Robot Development',
-              to: '/docs/module-5/01-kinematics-dynamics',
-            },
-            {
-              label: 'Module 7: Conversational Robotics',
-              to: '/docs/module-6/01-gpt-integration',
-            },
           ],
         },
         {
