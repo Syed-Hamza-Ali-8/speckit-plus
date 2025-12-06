@@ -1,0 +1,134 @@
+"""
+Application entry point with menu-based interface
+"""
+import sys
+import os
+# Add the project root to the Python path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from src.cli.cli import CLI
+
+
+def display_menu():
+    """Display the main menu"""
+    print("\n" + "="*50)
+    print("           TODO CONSOLE APPLICATION")
+    print("="*50)
+    print("1. Add Task")
+    print("2. View Tasks")
+    print("3. Update Task")
+    print("4. Delete Task")
+    print("5. Mark Complete")
+    print("6. Mark Incomplete")
+    print("0. Exit")
+    print("="*50)
+
+
+def get_user_input(prompt):
+    """Get user input with basic error handling"""
+    try:
+        return input(prompt).strip()
+    except (EOFError, KeyboardInterrupt):
+        print("\n\nApplication interrupted. Goodbye!")
+        sys.exit(0)
+
+
+def main():
+    """Main application entry point with menu interface"""
+    cli = CLI("tasks.json")
+
+    print("Welcome to the Todo Console Application!")
+
+    while True:
+        display_menu()
+
+        choice = get_user_input("Enter your choice (0-6): ")
+
+        if choice == "1":
+            # Add Task
+            title = get_user_input("Enter task title: ")
+            if not title:
+                print("Task title cannot be empty!")
+                continue
+
+            description = get_user_input("Enter task description (optional, press Enter to skip): ")
+            if not description:  # If empty, set to None
+                description = None
+
+            cli.add_task(title, description)
+
+        elif choice == "2":
+            # View Tasks
+            cli.list_tasks()
+
+        elif choice == "3":
+            # Update Task
+            try:
+                task_id = int(get_user_input("Enter task ID to update: "))
+                title = get_user_input("Enter new title (or press Enter to keep current): ")
+                description = get_user_input("Enter new description (or press Enter to keep current): ")
+
+                # If the user didn't enter anything, we'll pass None to keep current values
+                title = title if title else None
+                description = description if description else None
+
+                # If both are None, we still need to call update_task to get the current values
+                # So let's get the current task first to see what to update
+                from src.services.task_service import TaskService
+                temp_service = TaskService("tasks.json")
+                current_task = temp_service.get_task(task_id)
+
+                if current_task:
+                    if title is None and description is None:
+                        print("No changes provided. Task not updated.")
+                        continue
+                    elif title is None:
+                        title = current_task.title
+                    elif description is None:
+                        description = current_task.description
+
+                    cli.update_task(task_id, title, description)
+                else:
+                    print(f"Error: Task with ID {task_id} not found")
+
+            except ValueError:
+                print("Invalid task ID. Please enter a number.")
+
+        elif choice == "4":
+            # Delete Task
+            try:
+                task_id = int(get_user_input("Enter task ID to delete: "))
+                cli.delete_task(task_id)
+            except ValueError:
+                print("Invalid task ID. Please enter a number.")
+
+        elif choice == "5":
+            # Mark Complete
+            try:
+                task_id = int(get_user_input("Enter task ID to mark complete: "))
+                cli.mark_complete(task_id)
+            except ValueError:
+                print("Invalid task ID. Please enter a number.")
+
+        elif choice == "6":
+            # Mark Incomplete
+            try:
+                task_id = int(get_user_input("Enter task ID to mark incomplete: "))
+                cli.mark_incomplete(task_id)
+            except ValueError:
+                print("Invalid task ID. Please enter a number.")
+
+        elif choice == "0":
+            # Exit
+            print("Thank you for using the Todo Console Application. Goodbye!")
+            break
+
+        else:
+            print("Invalid choice. Please enter a number between 0 and 6.")
+
+        # Pause to let user see the result before showing the menu again
+        input("\nPress Enter to continue...")
+
+
+if __name__ == "__main__":
+    main()

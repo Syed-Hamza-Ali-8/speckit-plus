@@ -78,16 +78,18 @@ const ImageGallery: ImageItem[] = [
 
 function Feature({title, Svg, description, delay}: FeatureItem) {
   return (
-    <div className="w-full sm:w-1/2 lg:w-1/3 p-4">
+    <div className="w-full p-4">
       <div className={`
-        flex flex-col items-center justify-center h-full
+        flex flex-col md:flex-row items-center gap-6
         bg-white dark:bg-gray-800
         rounded-lg shadow-lg p-6
         transform transition duration-300 hover:scale-105 hover:shadow-xl hover:-translate-y-2
         animate-fade-in-up ${delay}
       `}>
-        <Svg className="w-24 h-24 mx-auto mb-4 text-[var(--ifm-color-primary)]" role="img" />
-        <div className="text-center">
+        <div className="md:w-2/5 flex justify-center">
+          <Svg className="w-24 h-24 text-[var(--ifm-color-primary)]" role="img" />
+        </div>
+        <div className="md:w-3/5 text-center md:text-left">
           <Heading as="h3" className="text-xl font-semibold mb-2 text-balance">
             {title}
           </Heading>
@@ -105,23 +107,25 @@ function ImageGrid() {
         <Heading as="h2" className="text-fluid-4xl font-bold text-center mb-12 text-gray-800 dark:text-white text-balance">
           Visualizing Key Concepts in Physical AI
         </Heading>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="space-y-8">
           {ImageGallery.map((item, idx) => (
-            <div key={idx} className={`relative group rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 transform hover:scale-105 animate-fade-in delay-${(idx + 1) * 100}`}>
-              <img
-                src={item.src}
-                alt={item.alt}
-                className="w-full h-48 object-cover"
-              />
-              <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-full group-hover:translate-y-0">
-                <p className="text-white text-lg font-semibold px-4 text-center">
+            <div key={idx} className={`flex flex-col md:flex-row items-center gap-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 animate-fade-in delay-${(idx + 1) * 100}`}>
+              <div className="md:w-2/5">
+                <img
+                  src={item.src}
+                  alt={item.alt}
+                  className="w-full h-auto rounded-lg"
+                />
+              </div>
+              <div className="md:w-3/5 text-center md:text-left">
+                <p className="text-lg font-semibold mb-2 text-gray-800 dark:text-white">
                   {item.caption}
-                  {item.link && (
-                    <Link to={item.link} className="block text-[var(--ifm-color-primary-light)] hover:text-[var(--ifm-color-primary-lighter)] text-sm mt-2">
-                      View Details
-                    </Link>
-                  )}
                 </p>
+                {item.link && (
+                  <Link to={item.link} className="inline-block bg-primary-500 hover:bg-primary-600 text-white font-bold py-2 px-4 rounded-full shadow-lg transition duration-300 ease-in-out transform hover:scale-105">
+                    View Details
+                  </Link>
+                )}
               </div>
             </div>
           ))}

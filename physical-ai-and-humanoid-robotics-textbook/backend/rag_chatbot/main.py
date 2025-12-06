@@ -14,6 +14,13 @@ from .utils import get_embeddings, chunk_text, EMBEDDING_DIMENSION
 
 load_dotenv()  # Load environment variables
 
+# Explicitly check for API key in .env file first
+if os.path.exists('.env'):
+    # Load again to ensure .env values take precedence over system variables
+    from dotenv import dotenv_values
+    env_vars = dotenv_values('.env')
+    os.environ['GOOGLE_API_KEY'] = env_vars.get('GOOGLE_API_KEY', os.environ.get('GOOGLE_API_KEY', ''))
+
 app = FastAPI()
 
 # ------------------ CORS ------------------
@@ -210,10 +217,12 @@ async def chat(request: ChatRequest):
         )
 
         model = genai.GenerativeModel("gemini-2.5-flash")
-        resp = await model.generate_content_async(prompt_text)
-        answer = resp.text if resp else "No response generated."
+        answer = await safe_generate_content(model, prompt_text)
 
         return {"response": answer, "context": context}
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Chat failed: {e}")
 
@@ -237,8 +246,13 @@ async def query_selected_text(request: QuerySelectedTextRequest):
             f"User Question: {request.user_question or 'Explain the selected text.'}"
         )
 
-        response = await generate_response([{"role":"user","content":prompt_text}])
-        return {"response": response, "context": context}
+        model = genai.GenerativeModel("gemini-2.5-flash")
+        answer = await safe_generate_content(model, prompt_text)
+
+        return {"response": answer, "context": context}
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Query failed: {e}")
 
@@ -249,3 +263,19 @@ async def generate_response(prompt_messages: List[Dict[str, str]]) -> str:
     prompt_text = "\n\n".join([msg["content"] for msg in prompt_messages])
     resp = await model.generate_content_async(prompt_text)
     return resp.text if resp else "No response generated."
+
+
+# Error handling wrapper for Google API calls
+async def safe_generate_content(model: genai.GenerativeModel, prompt: str) -> str:
+    try:
+        resp = await model.generate_content_async(prompt)
+        return resp.text if resp else "No response generated."
+    except Exception as e:
+        error_msg = str(e)
+        if "403" in error_msg or "Permission denied" in error_msg or "CONSUMER_SUSPENDED" in error_msg:
+            raise HTTPException(
+                status_code=500,
+                detail="Google API key issue. Please check that your API key is valid and not suspended."
+            )
+        else:
+            raise e
