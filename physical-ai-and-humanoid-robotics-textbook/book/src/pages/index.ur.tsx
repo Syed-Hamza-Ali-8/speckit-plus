@@ -33,7 +33,7 @@ function HomepageHeader() {
               transition duration-300 ease-in-out transform hover:scale-105
               text-lg
             "
-            to="/docs/module-1/ros-overview"> {/* Link to English doc for now, needs Urdu equivalent */}
+            to="/docs/intro"> {/* Link to English doc for now, needs Urdu equivalent */}
             ٹیکسٹ بک دریافت کریں - سیکھنا شروع کریں 🚀
           </Link>
         </div>
