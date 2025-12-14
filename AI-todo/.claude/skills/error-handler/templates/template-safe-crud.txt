@@ -1,0 +1,8 @@
+try:
+    result = session.exec(query).first()
+    if not result:
+        return not_found("Resource not found")
+except IntegrityError:
+    return conflict("Invalid or duplicate data")
+except SQLAlchemyError:
+    return error_response("DatabaseError", "Database failure", status_code=500)

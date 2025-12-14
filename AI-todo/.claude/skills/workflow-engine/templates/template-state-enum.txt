@@ -1,0 +1,3 @@
+class MODELState(str, Enum):
+    STATE_1 = "STATE_1"
+    STATE_2 = "STATE_2"

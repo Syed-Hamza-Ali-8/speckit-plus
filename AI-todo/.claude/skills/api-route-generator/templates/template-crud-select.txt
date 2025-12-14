@@ -1,0 +1,4 @@
+result = session.exec(select(MODEL).where(MODEL.id == id)).first()
+if not result:
+    not_found("MODEL not found")
+return result

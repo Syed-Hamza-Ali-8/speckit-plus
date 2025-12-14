@@ -11,7 +11,13 @@
       "title": "Claude",
       "description": "Claude with qwen",
       "completed": false
+    },
+    {
+      "id": 3,
+      "title": "Phase2",
+      "description": "Create a todo app by using next js for frontend and fastapi for backend",
+      "completed": false
     }
   ],
-  "next_id": 3
+  "next_id": 4
 }

@@ -1,0 +1,5 @@
+Spec Summary:
+- Endpoint: PATCH /tasks/{id}/complete
+- Auth Required: Yes
+- Body: None
+- Response: TaskRead
