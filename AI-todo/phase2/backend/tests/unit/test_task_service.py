@@ -34,10 +34,11 @@ class TestGetTasks:
             sqlite_session, user2_id, TaskCreate(title="User2 Task")
         )
 
-        # Get tasks for user1
-        user1_tasks = await task_service.get_tasks(sqlite_session, user1_id)
+        # Get tasks for user1 (returns tuple of tasks, total_count)
+        user1_tasks, total = await task_service.get_tasks(sqlite_session, user1_id)
 
         assert len(user1_tasks) == 2
+        assert total == 2
         assert all(t.user_id == user1_id for t in user1_tasks)
 
     @pytest.mark.asyncio
@@ -47,9 +48,10 @@ class TestGetTasks:
         """Get tasks should return empty list for user with no tasks."""
         user_id = uuid4()
 
-        tasks = await task_service.get_tasks(sqlite_session, user_id)
+        tasks, total = await task_service.get_tasks(sqlite_session, user_id)
 
         assert tasks == []
+        assert total == 0
 
 
 class TestGetTask:

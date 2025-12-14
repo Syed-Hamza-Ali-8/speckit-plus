@@ -1,6 +1,6 @@
 """Task schemas for request/response validation."""
 
-from datetime import datetime
+from datetime import date, datetime
 from uuid import UUID
 
 from pydantic import BaseModel, Field
@@ -47,7 +47,7 @@ class TaskUpdate(BaseModel):
 
 
 class TaskResponse(BaseModel):
-    """Schema for task data in responses."""
+    """Schema for task data in responses (includes user_id for backward compatibility)."""
 
     id: UUID = Field(..., description="Unique task identifier")
     user_id: UUID = Field(..., description="Owner user ID")
@@ -58,3 +58,29 @@ class TaskResponse(BaseModel):
     updated_at: datetime = Field(..., description="Last update timestamp")
 
     model_config = {"from_attributes": True}
+
+
+class TaskRead(BaseModel):
+    """Schema for task data in responses (excludes user_id for security).
+
+    This schema hides user_id from API responses as the user context
+    is already implied by authentication.
+    """
+
+    id: UUID = Field(..., description="Unique task identifier")
+    title: str = Field(..., description="Task title")
+    description: str | None = Field(..., description="Task description")
+    status: TaskStatus = Field(..., description="Task status")
+    created_at: datetime = Field(..., description="Creation timestamp")
+    updated_at: datetime = Field(..., description="Last update timestamp")
+
+    model_config = {"from_attributes": True}
+
+
+class PaginatedTaskResponse(BaseModel):
+    """Schema for paginated task list responses."""
+
+    items: list[TaskRead] = Field(..., description="List of tasks")
+    total: int = Field(..., description="Total count of matching tasks")
+    limit: int = Field(..., description="Page size")
+    offset: int = Field(..., description="Current offset")
