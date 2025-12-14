@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'sonner';
 import { useTheme } from '@/hooks/useTheme';
 import { ROUTES } from '@/routes';
 import { ProtectedRoute } from '@/routes/ProtectedRoute';
@@ -18,6 +19,16 @@ function App() {
 
   return (
     <BrowserRouter>
+      {/* Sonner Toaster - positioned top-right, respects dark mode */}
+      <Toaster
+        position="top-right"
+        theme={isDark ? 'dark' : 'light'}
+        richColors
+        closeButton
+        toastOptions={{
+          duration: 3000, // Default 3s for success
+        }}
+      />
       <Layout>
         <Routes>
           {/* Public routes */}

@@ -176,11 +176,11 @@
 
 **Checkpoint**: `npm run build` → 0 errors, `npx tsc --noEmit` passes
 
-- [ ] T053 Create `.gitignore` with node_modules, dist, .env.local in `phase3/frontend/`
-- [ ] T054 Review and fix any TypeScript errors: `npx tsc --noEmit`
-- [ ] T055 Run production build: `npm run build` → verify dist/ created
-- [ ] T056 Verify dark mode toggle works: click toggle, theme switches, persists on reload
-- [ ] T057 Final manual verification: all 10 acceptance tests from spec.md Section 4.1
+- [x] T053 Create `.gitignore` with node_modules, dist, .env.local in `phase2/frontend/`
+- [x] T054 Review and fix any TypeScript errors: `npx tsc --noEmit`
+- [x] T055 Run production build: `npm run build` → verify dist/ created
+- [x] T056 Verify dark mode toggle works: click toggle, theme switches, persists on reload
+- [x] T057 Final manual verification: all 10 acceptance tests from spec.md Section 4.1
 
 **Deliverables**:
 - Zero TypeScript errors

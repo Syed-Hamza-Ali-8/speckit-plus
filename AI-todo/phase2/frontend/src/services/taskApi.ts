@@ -64,12 +64,12 @@ export const taskApi = api.injectEndpoints({
 
     /**
      * Update existing task
-     * PUT /tasks/:id
+     * PATCH /tasks/:id
      */
     updateTask: builder.mutation<Task, { id: string; data: TaskUpdate }>({
       query: ({ id, data }) => ({
         url: `/tasks/${id}`,
-        method: 'PUT',
+        method: 'PATCH',
         body: data,
       }),
       invalidatesTags: (_result, _error, { id }) => [
