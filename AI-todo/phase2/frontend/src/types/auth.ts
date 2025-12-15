@@ -17,6 +17,8 @@ export interface LoginRequest {
 export interface RegisterRequest {
   email: string;
   password: string;
+  first_name?: string;
+  last_name?: string;
 }
 
 /**
@@ -33,6 +35,7 @@ export interface AuthResponse {
 export interface JWTPayload {
   sub: string;      // User ID
   email: string;
+  name: string;     // Display name from backend
   exp: number;      // Expiration timestamp
   iat: number;      // Issued at timestamp
 }

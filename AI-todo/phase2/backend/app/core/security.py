@@ -50,6 +50,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def create_access_token(
     user_id: UUID,
     email: str,
+    display_name: str,
     expires_delta: timedelta | None = None,
 ) -> str:
     """Create a JWT access token.
@@ -57,6 +58,7 @@ def create_access_token(
     Args:
         user_id: User's UUID to encode in 'sub' claim.
         email: User's email to include in token.
+        display_name: User's display name to include in token.
         expires_delta: Optional custom expiration time.
 
     Returns:
@@ -72,6 +74,7 @@ def create_access_token(
     to_encode: dict[str, Any] = {
         "sub": str(user_id),
         "email": email,
+        "name": display_name,
         "iat": now,
         "exp": expire,
     }

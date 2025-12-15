@@ -1,0 +1,261 @@
+openapi: 3.1.0
+info:
+  title: Notifications API
+  description: User notifications endpoints for listing, marking as read, and unread count
+  version: 1.0.0
+
+servers:
+  - url: /api
+    description: API base path
+
+tags:
+  - name: notifications
+    description: Notification operations
+
+paths:
+  /notifications:
+    get:
+      tags: [notifications]
+      summary: Get user notifications
+      description: |
+        Fetches paginated list of notifications for the authenticated user.
+        Returns notifications sorted by created_at descending (newest first).
+      operationId: getNotifications
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          description: Maximum notifications to return
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+        - name: offset
+          in: query
+          description: Pagination offset
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: unread_only
+          in: query
+          description: Filter to unread notifications only
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Notification list with counts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationListResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /notifications/{id}/read:
+    patch:
+      tags: [notifications]
+      summary: Mark notification as read
+      description: Marks a single notification as read.
+      operationId: markNotificationRead
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Notification UUID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Notification marked as read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationMarkReadResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Not owner of notification
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Notification not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /notifications/mark-all-read:
+    post:
+      tags: [notifications]
+      summary: Mark all notifications as read
+      description: Marks all unread notifications as read for the authenticated user.
+      operationId: markAllNotificationsRead
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: All notifications marked as read
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationMarkAllReadResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /notifications/unread-count:
+    get:
+      tags: [notifications]
+      summary: Get unread notification count
+      description: |
+        Lightweight endpoint that returns only the unread count.
+        Use this for badge polling instead of fetching full list.
+      operationId: getUnreadCount
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Unread count
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnreadCountResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT access token from /auth/login
+
+  schemas:
+    NotificationResponse:
+      type: object
+      required:
+        - id
+        - type
+        - title
+        - message
+        - is_read
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Notification UUID
+        type:
+          type: string
+          enum: [task_due, task_overdue, task_completed, welcome, system]
+          description: Notification type
+        title:
+          type: string
+          maxLength: 100
+          description: Short title
+        message:
+          type: string
+          maxLength: 500
+          description: Full message
+        is_read:
+          type: boolean
+          description: Read status
+        action_url:
+          type: string
+          maxLength: 255
+          nullable: true
+          description: Optional deep link URL
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp
+
+    NotificationListResponse:
+      type: object
+      required:
+        - notifications
+        - unread_count
+        - total
+      properties:
+        notifications:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationResponse'
+          description: List of notifications
+        unread_count:
+          type: integer
+          minimum: 0
+          description: Total unread count
+        total:
+          type: integer
+          minimum: 0
+          description: Total notification count
+
+    NotificationMarkReadResponse:
+      type: object
+      required:
+        - id
+        - is_read
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Notification UUID
+        is_read:
+          type: boolean
+          description: New read status (always true)
+          example: true
+
+    NotificationMarkAllReadResponse:
+      type: object
+      required:
+        - marked_count
+      properties:
+        marked_count:
+          type: integer
+          minimum: 0
+          description: Number of notifications marked as read
+
+    UnreadCountResponse:
+      type: object
+      required:
+        - unread_count
+      properties:
+        unread_count:
+          type: integer
+          minimum: 0
+          description: Unread notification count
+
+    ErrorResponse:
+      type: object
+      required:
+        - detail
+      properties:
+        detail:
+          type: string
+          description: Error message

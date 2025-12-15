@@ -14,17 +14,18 @@ export interface ProtectedRouteProps {
 /**
  * ProtectedRoute component
  * Wraps routes that require authentication
- * Redirects to login page if user is not authenticated
+ * Redirects to home/landing page if user is not authenticated
  * Captures current path and passes as returnTo query param
  *
  * Flow:
  * - Unauthenticated visit to /tasks
- * - Redirects to /login?returnTo=/tasks
+ * - Redirects to /?returnTo=/tasks
+ * - User sees landing page, clicks login/register
  * - After login, user returns to /tasks
  */
 export function ProtectedRoute({
   children,
-  redirectTo = ROUTES.LOGIN,
+  redirectTo = ROUTES.HOME,
 }: ProtectedRouteProps) {
   const { isAuthenticated } = useAuth();
   const location = useLocation();

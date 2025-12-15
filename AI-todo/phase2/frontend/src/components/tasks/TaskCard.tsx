@@ -1,31 +1,24 @@
+import { motion } from 'framer-motion';
 import { Pencil, Trash2 } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { GlassCard } from '@/components/ui/GlassCard';
+import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import type { Task } from '@/types/task';
 
-/**
- * Props for the TaskCard component
- */
 export interface TaskCardProps {
   task: Task;
   onEdit: () => void;
   onDelete: () => void;
   onToggleStatus: () => void;
+  index?: number;
 }
 
-/**
- * Truncate text with ellipsis if exceeds max length
- */
 function truncateText(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
   return text.slice(0, maxLength).trim() + '...';
 }
 
-/**
- * Format ISO date string to readable format (e.g., "Dec 15, 2025")
- */
 function formatDate(isoDate: string): string {
   const date = new Date(isoDate);
   return date.toLocaleDateString('en-US', {
@@ -35,90 +28,142 @@ function formatDate(isoDate: string): string {
   });
 }
 
-/**
- * TaskCard Component
- *
- * Mobile-friendly card display for a single task.
- * Shows title, description, status badge, created date, and action buttons.
- */
-export function TaskCard({ task, onEdit, onDelete, onToggleStatus }: TaskCardProps) {
+export function TaskCard({
+  task,
+  onEdit,
+  onDelete,
+  onToggleStatus,
+  index = 0,
+}: TaskCardProps) {
   const isCompleted = task.status === 'completed';
 
   return (
-    <Card className="w-full transition-colors hover:bg-accent/50">
-      <CardContent className="p-4">
-        <div className="flex items-start gap-3">
-          {/* T017: Checkbox for status toggle */}
-          <Checkbox
-            checked={isCompleted}
-            onCheckedChange={onToggleStatus}
-            className="mt-1"
-            aria-label={`Mark task "${task.title}" as ${isCompleted ? 'pending' : 'completed'}`}
-          />
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20, scale: 0.95 }}
+      transition={{
+        duration: 0.3,
+        delay: index * 0.05,
+        ease: [0.4, 0, 0.2, 1],
+      }}
+      layout
+      layoutId={task.id}
+    >
+      <GlassCard
+        variant="default"
+        hover={true}
+        padding="none"
+        className={cn(
+          'group relative overflow-hidden',
+          isCompleted && 'opacity-75'
+        )}
+      >
+        {/* Gradient accent bar */}
+        <div
+          className={cn(
+            'absolute left-0 top-0 bottom-0 w-1',
+            'bg-gradient-to-b',
+            isCompleted
+              ? 'from-emerald-500 to-green-500'
+              : 'from-purple-500 via-blue-500 to-indigo-600'
+          )}
+        />
 
-          <div className="flex-1 min-w-0">
-            {/* T013: Task title (truncated if > 50 chars) */}
-            <h3
-              className={`font-medium text-sm leading-tight ${
-                isCompleted ? 'line-through text-muted-foreground' : ''
-              }`}
-              title={task.title}
+        <div className="p-4 pl-5">
+          <div className="flex items-start gap-3">
+            {/* Checkbox */}
+            <motion.div
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
             >
-              {truncateText(task.title, 50)}
-            </h3>
-
-            {/* T014: Task description (truncated, optional) */}
-            {task.description && (
-              <p
-                className="text-xs text-muted-foreground mt-1 line-clamp-2"
-                title={task.description}
-              >
-                {truncateText(task.description, 100)}
-              </p>
-            )}
-
-            {/* T015 & T016: Status badge and created date */}
-            <div className="flex items-center gap-2 mt-2">
-              <Badge
-                variant={isCompleted ? 'default' : 'secondary'}
-                className={
+              <Checkbox
+                checked={isCompleted}
+                onCheckedChange={onToggleStatus}
+                className={cn(
+                  'mt-1 h-5 w-5 rounded-md',
+                  'border-2',
                   isCompleted
-                    ? 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20'
-                    : 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20'
-                }
+                    ? 'border-emerald-500 bg-emerald-500 data-[state=checked]:bg-emerald-500'
+                    : 'border-purple-300 dark:border-purple-600'
+                )}
+                aria-label={`Mark task "${task.title}" as ${isCompleted ? 'pending' : 'completed'}`}
+              />
+            </motion.div>
+
+            <div className="flex-1 min-w-0">
+              {/* Title */}
+              <h3
+                className={cn(
+                  'font-medium text-sm leading-tight transition-all duration-200',
+                  isCompleted
+                    ? 'line-through text-gray-500 dark:text-gray-400'
+                    : 'text-gray-900 dark:text-gray-100'
+                )}
+                title={task.title}
               >
-                {isCompleted ? 'Completed' : 'Pending'}
-              </Badge>
-              <span className="text-xs text-muted-foreground">
-                {formatDate(task.created_at)}
-              </span>
+                {truncateText(task.title, 50)}
+              </h3>
+
+              {/* Description */}
+              {task.description && (
+                <p
+                  className="text-xs text-gray-600 dark:text-gray-400 mt-1.5 line-clamp-2"
+                  title={task.description}
+                >
+                  {truncateText(task.description, 100)}
+                </p>
+              )}
+
+              {/* Status badge and date */}
+              <div className="flex items-center gap-2 mt-3">
+                <StatusBadge
+                  status={isCompleted ? 'completed' : 'pending'}
+                  size="sm"
+                />
+                <span className="text-xs text-gray-600 dark:text-gray-400">
+                  {formatDate(task.created_at)}
+                </span>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={onEdit}
+                className={cn(
+                  'p-2 rounded-lg',
+                  'bg-white/50 dark:bg-gray-800/50',
+                  'hover:bg-purple-500/10 dark:hover:bg-purple-500/20',
+                  'text-muted-foreground hover:text-purple-600 dark:hover:text-purple-400',
+                  'transition-colors duration-200'
+                )}
+                aria-label={`Edit task "${task.title}"`}
+              >
+                <Pencil className="h-4 w-4" />
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={onDelete}
+                className={cn(
+                  'p-2 rounded-lg',
+                  'bg-white/50 dark:bg-gray-800/50',
+                  'hover:bg-red-500/10 dark:hover:bg-red-500/20',
+                  'text-muted-foreground hover:text-red-600 dark:hover:text-red-400',
+                  'transition-colors duration-200'
+                )}
+                aria-label={`Delete task "${task.title}"`}
+              >
+                <Trash2 className="h-4 w-4" />
+              </motion.button>
             </div>
           </div>
-
-          {/* T018 & T019: Action buttons */}
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={onEdit}
-              aria-label={`Edit task "${task.title}"`}
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-              onClick={onDelete}
-              aria-label={`Delete task "${task.title}"`}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
         </div>
-      </CardContent>
-    </Card>
+      </GlassCard>
+    </motion.div>
   );
 }
 

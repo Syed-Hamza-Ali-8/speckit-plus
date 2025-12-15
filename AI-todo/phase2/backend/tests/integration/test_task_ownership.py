@@ -100,7 +100,10 @@ class TestTaskOwnership:
             headers=user_a_with_task["headers"],
         )
         assert user_a_tasks.status_code == 200
-        a_task_ids = [t["id"] for t in user_a_tasks.json()]
+        a_response = user_a_tasks.json()
+        # Handle both paginated {"items": [...]} and direct list responses
+        a_items = a_response.get("items", a_response) if isinstance(a_response, dict) else a_response
+        a_task_ids = [t["id"] for t in a_items]
 
         # User B lists their tasks
         user_b_tasks = await test_client.get(
@@ -108,7 +111,10 @@ class TestTaskOwnership:
             headers=user_b_credentials["headers"],
         )
         assert user_b_tasks.status_code == 200
-        b_task_ids = [t["id"] for t in user_b_tasks.json()]
+        b_response = user_b_tasks.json()
+        # Handle both paginated {"items": [...]} and direct list responses
+        b_items = b_response.get("items", b_response) if isinstance(b_response, dict) else b_response
+        b_task_ids = [t["id"] for t in b_items]
 
         # User A should see their task but not User B's
         assert user_a_with_task["task_id"] in a_task_ids

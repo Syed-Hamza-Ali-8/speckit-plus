@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
-from app.api.routes import auth, tasks
+from app.api.routes import auth, notifications, tasks
 from app.core.database import close_db, get_async_engine
 from app.middleware.rate_limit import limiter
 
@@ -58,6 +58,9 @@ app.include_router(auth.router)
 
 # T032: Mount tasks router at /tasks prefix
 app.include_router(tasks.router)
+
+# Mount notifications router at /notifications prefix
+app.include_router(notifications.router)
 
 
 @app.get("/", tags=["root"])

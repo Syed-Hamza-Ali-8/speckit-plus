@@ -1,0 +1,214 @@
+openapi: 3.1.0
+info:
+  title: Settings API
+  description: User settings, password change, and account deletion endpoints
+  version: 1.0.0
+
+servers:
+  - url: /api
+    description: API base path
+
+tags:
+  - name: settings
+    description: User settings operations
+  - name: security
+    description: Password and account security
+
+paths:
+  /auth/me/settings:
+    patch:
+      tags: [settings]
+      summary: Update user settings
+      description: |
+        Updates the authenticated user's settings.
+        Only provided fields are updated (partial update).
+      operationId: updateSettings
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserSettingsUpdate'
+            examples:
+              updateTheme:
+                summary: Update theme only
+                value:
+                  theme: "dark"
+              updateNotifications:
+                summary: Update notifications only
+                value:
+                  email_notifications: false
+              updateBoth:
+                summary: Update all settings
+                value:
+                  theme: "system"
+                  email_notifications: true
+      responses:
+        '200':
+          description: Settings updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSettingsResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/change-password:
+    post:
+      tags: [security]
+      summary: Change user password
+      description: |
+        Changes the authenticated user's password.
+        Requires current password verification.
+        Rate limited to 5 attempts per hour.
+      operationId: changePassword
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordChangeRequest'
+      responses:
+        '200':
+          description: Password changed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+              example:
+                message: "Password changed successfully"
+        '401':
+          description: Current password is incorrect
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                detail: "Current password is incorrect"
+        '422':
+          description: Validation error (new password too short)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                detail: "Rate limit exceeded. Try again later."
+
+  /auth/me:
+    delete:
+      tags: [security]
+      summary: Delete user account
+      description: |
+        Permanently deletes the authenticated user's account.
+        This action is irreversible and removes all associated data.
+        - User profile
+        - All tasks
+        - Settings
+      operationId: deleteAccount
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Account deleted successfully (no content)
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT access token from /auth/login
+
+  schemas:
+    UserSettingsUpdate:
+      type: object
+      description: Partial update request - only provided fields are updated
+      properties:
+        theme:
+          type: string
+          enum: [light, dark, system]
+          description: Theme preference
+          example: "dark"
+        email_notifications:
+          type: boolean
+          description: Email notification preference
+          example: true
+
+    UserSettingsResponse:
+      type: object
+      required:
+        - theme
+        - email_notifications
+      properties:
+        theme:
+          type: string
+          enum: [light, dark, system]
+          description: Current theme preference
+          example: "dark"
+        email_notifications:
+          type: boolean
+          description: Email notifications enabled
+          example: true
+
+    PasswordChangeRequest:
+      type: object
+      required:
+        - current_password
+        - new_password
+      properties:
+        current_password:
+          type: string
+          minLength: 1
+          description: Current password for verification
+          example: "oldpassword123"
+        new_password:
+          type: string
+          minLength: 8
+          description: New password (minimum 8 characters)
+          example: "newpassword456"
+
+    MessageResponse:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          description: Success message
+          example: "Password changed successfully"
+
+    ErrorResponse:
+      type: object
+      required:
+        - detail
+      properties:
+        detail:
+          type: string
+          description: Error message
+          example: "Current password is incorrect"

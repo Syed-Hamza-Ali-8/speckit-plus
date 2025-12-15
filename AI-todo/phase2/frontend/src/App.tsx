@@ -8,11 +8,16 @@ import { Layout } from '@/components/layout/Layout';
 import { LoginPage } from '@/pages/LoginPage';
 import { RegisterPage } from '@/pages/RegisterPage';
 import { TasksPage } from '@/pages/TasksPage';
+import { LandingPage } from '@/pages/LandingPage';
+import { ProfilePage } from '@/pages/ProfilePage';
+import { SettingsPage } from '@/pages/SettingsPage';
+import { useAuth } from '@/hooks/useAuth';
 
 function App() {
   const { theme, isDark } = useTheme();
+  const { isAuthenticated } = useAuth();
 
-  // Log theme value for verification (T032)
+  // Log theme value for verification
   useEffect(() => {
     console.log('[Zustand] Current theme:', theme, '| isDark:', isDark);
   }, [theme, isDark]);
@@ -26,18 +31,30 @@ function App() {
         richColors
         closeButton
         toastOptions={{
-          duration: 3000, // Default 3s for success
+          duration: 3000,
         }}
       />
       <Layout>
         <Routes>
+          {/* Landing page for non-authenticated users */}
+          <Route
+            path={ROUTES.HOME}
+            element={
+              isAuthenticated ? (
+                <Navigate to={ROUTES.TASKS} replace />
+              ) : (
+                <LandingPage />
+              )
+            }
+          />
+
           {/* Public routes */}
           <Route path={ROUTES.LOGIN} element={<LoginPage />} />
           <Route path={ROUTES.REGISTER} element={<RegisterPage />} />
 
           {/* Protected routes */}
           <Route
-            path={ROUTES.HOME}
+            path={ROUTES.TASKS}
             element={
               <ProtectedRoute>
                 <TasksPage />
@@ -45,10 +62,18 @@ function App() {
             }
           />
           <Route
-            path={ROUTES.TASKS}
+            path={ROUTES.PROFILE}
             element={
               <ProtectedRoute>
-                <TasksPage />
+                <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={ROUTES.SETTINGS}
+            element={
+              <ProtectedRoute>
+                <SettingsPage />
               </ProtectedRoute>
             }
           />

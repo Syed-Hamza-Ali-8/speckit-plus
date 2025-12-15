@@ -65,8 +65,9 @@ class TestJWTTokens:
         """T037: Create access token should return a valid JWT string."""
         user_id = uuid4()
         email = "test@example.com"
+        display_name = "Test User"
 
-        token = create_access_token(user_id=user_id, email=email)
+        token = create_access_token(user_id=user_id, email=email, display_name=display_name)
 
         assert token is not None
         assert isinstance(token, str)
@@ -78,13 +79,15 @@ class TestJWTTokens:
         """T037: Decode valid token should return payload with claims."""
         user_id = uuid4()
         email = "test@example.com"
+        display_name = "Test User"
 
-        token = create_access_token(user_id=user_id, email=email)
+        token = create_access_token(user_id=user_id, email=email, display_name=display_name)
         payload = decode_token(token)
 
         assert payload is not None
         assert payload["sub"] == str(user_id)
         assert payload["email"] == email
+        assert payload["name"] == display_name
         assert "exp" in payload
         assert "iat" in payload
 
@@ -92,11 +95,13 @@ class TestJWTTokens:
         """T038: Decode expired token should return None."""
         user_id = uuid4()
         email = "test@example.com"
+        display_name = "Test User"
 
         # Create token that expires immediately (negative delta)
         token = create_access_token(
             user_id=user_id,
             email=email,
+            display_name=display_name,
             expires_delta=timedelta(seconds=-1),
         )
         payload = decode_token(token)
@@ -133,13 +138,16 @@ class TestJWTTokens:
         """Create token with custom expiry delta."""
         user_id = uuid4()
         email = "test@example.com"
+        display_name = "Test User"
 
         token = create_access_token(
             user_id=user_id,
             email=email,
+            display_name=display_name,
             expires_delta=timedelta(hours=1),
         )
         payload = decode_token(token)
 
         assert payload is not None
         assert payload["sub"] == str(user_id)
+        assert payload["name"] == display_name

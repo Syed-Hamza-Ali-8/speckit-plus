@@ -1,0 +1,186 @@
+openapi: 3.1.0
+info:
+  title: Profile API
+  description: User profile management endpoints for Dynamic Profile Page feature
+  version: 1.0.0
+
+servers:
+  - url: /api
+    description: API base path
+
+tags:
+  - name: profile
+    description: User profile operations
+
+paths:
+  /auth/me:
+    get:
+      tags: [profile]
+      summary: Get current user profile
+      description: Returns the authenticated user's profile data
+      operationId: getCurrentUser
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    patch:
+      tags: [profile]
+      summary: Update current user profile
+      description: |
+        Updates the authenticated user's profile fields.
+        Only provided fields are updated (partial update).
+        Email cannot be changed via this endpoint.
+      operationId: updateProfile
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdateRequest'
+            examples:
+              updateName:
+                summary: Update name fields
+                value:
+                  first_name: "Jane"
+                  last_name: "Smith"
+              updateAvatar:
+                summary: Update avatar
+                value:
+                  avatar_url: "data:image/jpeg;base64,/9j/4AAQSkZJRg..."
+              clearName:
+                summary: Clear name fields
+                value:
+                  first_name: null
+                  last_name: null
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidData:
+                  value:
+                    detail: "first_name must be less than 100 characters"
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT access token from /auth/login
+
+  schemas:
+    UserResponse:
+      type: object
+      required:
+        - id
+        - email
+        - display_name
+        - is_active
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique user identifier
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        email:
+          type: string
+          format: email
+          description: User email address (immutable)
+          example: "user@example.com"
+        first_name:
+          type: string
+          maxLength: 100
+          nullable: true
+          description: User's first name
+          example: "John"
+        last_name:
+          type: string
+          maxLength: 100
+          nullable: true
+          description: User's last name
+          example: "Doe"
+        display_name:
+          type: string
+          description: Computed display name (first+last or email prefix)
+          example: "John Doe"
+        avatar_url:
+          type: string
+          nullable: true
+          description: Avatar image URL or base64 data URL
+          example: "data:image/jpeg;base64,/9j/4AAQSkZJRg..."
+        is_active:
+          type: boolean
+          description: Account active status
+          example: true
+        created_at:
+          type: string
+          format: date-time
+          description: Account creation timestamp (UTC)
+          example: "2025-01-15T10:30:00Z"
+
+    UserUpdateRequest:
+      type: object
+      description: Partial update request - only provided fields are updated
+      properties:
+        first_name:
+          type: string
+          maxLength: 100
+          nullable: true
+          description: User's first name (null to clear)
+          example: "Jane"
+        last_name:
+          type: string
+          maxLength: 100
+          nullable: true
+          description: User's last name (null to clear)
+          example: "Smith"
+        avatar_url:
+          type: string
+          nullable: true
+          description: |
+            Avatar as base64 data URL (format: data:image/<type>;base64,<data>)
+            Supported types: jpeg, png, webp
+            Max size: ~2.7MB (2MB image encoded)
+            Set to null to remove avatar
+          example: "data:image/jpeg;base64,/9j/4AAQSkZJRg..."
+
+    ErrorResponse:
+      type: object
+      required:
+        - detail
+      properties:
+        detail:
+          type: string
+          description: Error message
+          example: "Invalid email or password"

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, User } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { registerSchema, type RegisterFormData } from '@/lib/validations/auth';
@@ -19,11 +19,12 @@ export interface RegisterFormProps {
 /**
  * RegisterForm - React Hook Form + Zod validation + RTK Query
  * Features:
+ * - First name/last name fields (optional)
  * - Email/password/confirmPassword fields with inline validation
  * - Cross-field validation (password match)
  * - Password visibility toggles
  * - Loading state with spinner
- * - Toast notifications for success/error
+ * - Personalized welcome toast
  * - Auto-login after successful registration
  */
 export function RegisterForm({ onSuccess }: RegisterFormProps) {
@@ -42,17 +43,23 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
 
   const onSubmit = async (data: RegisterFormData) => {
     try {
-      // Only send email and password to API (not confirmPassword)
+      // Send to API with snake_case field names
       const result = await register({
         email: data.email,
         password: data.password,
+        first_name: data.firstName || undefined,
+        last_name: data.lastName || undefined,
       }).unwrap();
 
       // Auto-login: Store token in localStorage
       localStorage.setItem('token', result.access_token);
 
-      // Success toast (3 second duration - default)
-      toast.success('Account created successfully!');
+      // Store email for header display (until we decode JWT)
+      localStorage.setItem('user_email', data.email);
+
+      // Personalized welcome toast
+      const displayName = data.firstName || data.email.split('@')[0];
+      toast.success(`Welcome, ${displayName}! Your account has been created.`);
 
       // Call success callback for redirect
       onSuccess?.();
@@ -72,9 +79,58 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      {/* Name Fields Row */}
+      <div className="grid grid-cols-2 gap-3">
+        {/* First Name Field */}
+        <div className="space-y-2">
+          <Label htmlFor="firstName" className="text-sm">
+            First Name
+          </Label>
+          <div className="relative">
+            <Input
+              id="firstName"
+              type="text"
+              placeholder="John"
+              autoComplete="given-name"
+              disabled={isLoading}
+              className={cn(
+                'pl-9',
+                errors.firstName && 'border-destructive'
+              )}
+              {...registerField('firstName')}
+            />
+            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          </div>
+          {errors.firstName && (
+            <p className="text-xs text-destructive">{errors.firstName.message}</p>
+          )}
+        </div>
+
+        {/* Last Name Field */}
+        <div className="space-y-2">
+          <Label htmlFor="lastName" className="text-sm">
+            Last Name
+          </Label>
+          <Input
+            id="lastName"
+            type="text"
+            placeholder="Doe"
+            autoComplete="family-name"
+            disabled={isLoading}
+            className={cn(errors.lastName && 'border-destructive')}
+            {...registerField('lastName')}
+          />
+          {errors.lastName && (
+            <p className="text-xs text-destructive">{errors.lastName.message}</p>
+          )}
+        </div>
+      </div>
+
       {/* Email Field */}
       <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email">
+          Email <span className="text-destructive">*</span>
+        </Label>
         <Input
           id="email"
           type="email"
@@ -91,7 +147,9 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
 
       {/* Password Field */}
       <div className="space-y-2">
-        <Label htmlFor="password">Password</Label>
+        <Label htmlFor="password">
+          Password <span className="text-destructive">*</span>
+        </Label>
         <div className="relative">
           <Input
             id="password"
@@ -123,7 +181,9 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
 
       {/* Confirm Password Field */}
       <div className="space-y-2">
-        <Label htmlFor="confirmPassword">Confirm Password</Label>
+        <Label htmlFor="confirmPassword">
+          Confirm Password <span className="text-destructive">*</span>
+        </Label>
         <div className="relative">
           <Input
             id="confirmPassword"
