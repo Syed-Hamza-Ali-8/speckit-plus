@@ -2,9 +2,11 @@
  * Notification types
  */
 export type NotificationType =
+  | 'task_created'
   | 'task_due'
   | 'task_overdue'
   | 'task_completed'
+  | 'task_deleted'
   | 'welcome'
   | 'system';
 
@@ -59,4 +61,19 @@ export interface NotificationQueryParams {
   limit?: number;
   offset?: number;
   unread_only?: boolean;
+}
+
+/**
+ * Delete notification response
+ */
+export interface NotificationDeleteResponse {
+  id: string;
+  deleted: boolean;
+}
+
+/**
+ * Clear all notifications response
+ */
+export interface NotificationClearAllResponse {
+  deleted_count: number;
 }

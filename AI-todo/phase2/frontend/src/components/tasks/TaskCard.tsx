@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2, Calendar, AlertTriangle } from 'lucide-react';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -28,6 +28,31 @@ function formatDate(isoDate: string): string {
   });
 }
 
+function formatDueDate(isoDate: string): string {
+  const date = new Date(isoDate + 'T00:00:00');
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+function isOverdue(dueDate: string | null, status: string): boolean {
+  if (!dueDate || status === 'completed') return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const due = new Date(dueDate + 'T00:00:00');
+  return due < today;
+}
+
+function isDueSoon(dueDate: string | null, status: string): boolean {
+  if (!dueDate || status === 'completed') return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const due = new Date(dueDate + 'T00:00:00');
+  const diffDays = Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  return diffDays >= 0 && diffDays <= 2;
+}
+
 export function TaskCard({
   task,
   onEdit,
@@ -36,6 +61,8 @@ export function TaskCard({
   index = 0,
 }: TaskCardProps) {
   const isCompleted = task.status === 'completed';
+  const taskIsOverdue = isOverdue(task.due_date, task.status);
+  const taskIsDueSoon = isDueSoon(task.due_date, task.status);
 
   return (
     <motion.div
@@ -66,6 +93,10 @@ export function TaskCard({
             'bg-gradient-to-b',
             isCompleted
               ? 'from-emerald-500 to-green-500'
+              : taskIsOverdue
+              ? 'from-red-500 to-red-600'
+              : taskIsDueSoon
+              ? 'from-amber-500 to-orange-500'
               : 'from-purple-500 via-blue-500 to-indigo-600'
           )}
         />
@@ -116,11 +147,30 @@ export function TaskCard({
               )}
 
               {/* Status badge and date */}
-              <div className="flex items-center gap-2 mt-3">
+              <div className="flex items-center gap-2 mt-3 flex-wrap">
                 <StatusBadge
                   status={isCompleted ? 'completed' : 'pending'}
                   size="sm"
                 />
+                {task.due_date && (
+                  <div
+                    className={cn(
+                      'flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium',
+                      taskIsOverdue
+                        ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+                        : taskIsDueSoon
+                        ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                    )}
+                  >
+                    {taskIsOverdue ? (
+                      <AlertTriangle className="w-3 h-3" />
+                    ) : (
+                      <Calendar className="w-3 h-3" />
+                    )}
+                    <span>{taskIsOverdue ? 'Overdue' : formatDueDate(task.due_date)}</span>
+                  </div>
+                )}
                 <span className="text-xs text-gray-600 dark:text-gray-400">
                   {formatDate(task.created_at)}
                 </span>

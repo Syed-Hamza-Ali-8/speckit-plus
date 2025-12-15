@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Pencil, Trash2, Calendar, AlertTriangle } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -41,6 +41,31 @@ function formatDate(isoDate: string): string {
   });
 }
 
+function formatDueDate(isoDate: string): string {
+  const date = new Date(isoDate + 'T00:00:00');
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+  });
+}
+
+function isOverdue(dueDate: string | null, status: string): boolean {
+  if (!dueDate || status === 'completed') return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const due = new Date(dueDate + 'T00:00:00');
+  return due < today;
+}
+
+function isDueSoon(dueDate: string | null, status: string): boolean {
+  if (!dueDate || status === 'completed') return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const due = new Date(dueDate + 'T00:00:00');
+  const diffDays = Math.ceil((due.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  return diffDays >= 0 && diffDays <= 2;
+}
+
 export function TaskTable({ tasks, onEdit, onDelete, onToggleStatus }: TaskTableProps) {
   return (
     <div
@@ -63,6 +88,9 @@ export function TaskTable({ tasks, onEdit, onDelete, onToggleStatus }: TaskTable
             </TableHead>
             <TableHead className="bg-white/50 dark:bg-gray-900/50 font-semibold text-gray-700 dark:text-gray-300">Status</TableHead>
             <TableHead className="hidden sm:table-cell bg-white/50 dark:bg-gray-900/50 font-semibold text-gray-700 dark:text-gray-300">
+              Due Date
+            </TableHead>
+            <TableHead className="hidden lg:table-cell bg-white/50 dark:bg-gray-900/50 font-semibold text-gray-700 dark:text-gray-300">
               Created
             </TableHead>
             <TableHead className="w-12 bg-white/50 dark:bg-gray-900/50"></TableHead>
@@ -71,6 +99,8 @@ export function TaskTable({ tasks, onEdit, onDelete, onToggleStatus }: TaskTable
         <TableBody>
           {tasks.map((task, index) => {
             const isCompleted = task.status === 'completed';
+            const taskIsOverdue = isOverdue(task.due_date, task.status);
+            const taskIsDueSoon = isDueSoon(task.due_date, task.status);
             return (
               <motion.tr
                 key={task.id}
@@ -128,8 +158,33 @@ export function TaskTable({ tasks, onEdit, onDelete, onToggleStatus }: TaskTable
                   <StatusBadge status={isCompleted ? 'completed' : 'pending'} size="sm" />
                 </TableCell>
 
+                {/* Due Date column */}
+                <TableCell className="hidden sm:table-cell py-3">
+                  {task.due_date ? (
+                    <div
+                      className={cn(
+                        'inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium',
+                        taskIsOverdue
+                          ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+                          : taskIsDueSoon
+                          ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'
+                          : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'
+                      )}
+                    >
+                      {taskIsOverdue ? (
+                        <AlertTriangle className="w-3 h-3" />
+                      ) : (
+                        <Calendar className="w-3 h-3" />
+                      )}
+                      <span>{taskIsOverdue ? 'Overdue' : formatDueDate(task.due_date)}</span>
+                    </div>
+                  ) : (
+                    <span className="text-gray-400 dark:text-gray-500">-</span>
+                  )}
+                </TableCell>
+
                 {/* Created column */}
-                <TableCell className="hidden sm:table-cell text-gray-600 dark:text-gray-400 py-3">
+                <TableCell className="hidden lg:table-cell text-gray-600 dark:text-gray-400 py-3">
                   {formatDate(task.created_at)}
                 </TableCell>
 

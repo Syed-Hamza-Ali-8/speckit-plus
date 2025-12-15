@@ -1,6 +1,8 @@
 import { api } from './api';
 import type {
   Notification,
+  NotificationClearAllResponse,
+  NotificationDeleteResponse,
   NotificationListResponse,
   NotificationMarkAllReadResponse,
   NotificationMarkReadResponse,
@@ -112,6 +114,96 @@ export const notificationApi = api.injectEndpoints({
         }
       },
     }),
+
+    /**
+     * Delete a single notification
+     */
+    deleteNotification: builder.mutation<NotificationDeleteResponse, string>({
+      query: (id) => ({
+        url: `/notifications/${id}`,
+        method: 'DELETE',
+      }),
+      // Optimistic update
+      async onQueryStarted(id, { dispatch, queryFulfilled }) {
+        // Update getNotifications cache optimistically
+        const patchNotifications = dispatch(
+          notificationApi.util.updateQueryData(
+            'getNotifications',
+            { limit: 10, offset: 0 },
+            (draft) => {
+              const index = draft.notifications.findIndex(
+                (n: Notification) => n.id === id
+              );
+              if (index !== -1) {
+                const wasUnread = !draft.notifications[index].is_read;
+                draft.notifications.splice(index, 1);
+                draft.total -= 1;
+                if (wasUnread) {
+                  draft.unread_count = Math.max(0, draft.unread_count - 1);
+                }
+              }
+            }
+          )
+        );
+
+        // Update unread count cache optimistically
+        const patchUnreadCount = dispatch(
+          notificationApi.util.updateQueryData('getUnreadCount', undefined, (draft) => {
+            // We don't know if it was unread, so we'll let the invalidation handle it
+          })
+        );
+
+        try {
+          await queryFulfilled;
+        } catch {
+          // Rollback on error
+          patchNotifications.undo();
+          patchUnreadCount.undo();
+        }
+      },
+      invalidatesTags: ['Notification'],
+    }),
+
+    /**
+     * Clear all notifications
+     */
+    clearAllNotifications: builder.mutation<NotificationClearAllResponse, void>({
+      query: () => ({
+        url: '/notifications',
+        method: 'DELETE',
+      }),
+      // Optimistic update
+      async onQueryStarted(_, { dispatch, queryFulfilled }) {
+        // Update getNotifications cache optimistically
+        const patchNotifications = dispatch(
+          notificationApi.util.updateQueryData(
+            'getNotifications',
+            { limit: 10, offset: 0 },
+            (draft) => {
+              draft.notifications = [];
+              draft.unread_count = 0;
+              draft.total = 0;
+            }
+          )
+        );
+
+        // Update unread count cache optimistically
+        const patchUnreadCount = dispatch(
+          notificationApi.util.updateQueryData('getUnreadCount', undefined, (draft) => {
+            draft.unread_count = 0;
+          })
+        );
+
+        try {
+          await queryFulfilled;
+        } catch {
+          // Rollback on error
+          patchNotifications.undo();
+          patchUnreadCount.undo();
+        }
+      },
+      invalidatesTags: ['Notification'],
+    }),
   }),
 });
 
@@ -120,4 +212,6 @@ export const {
   useGetUnreadCountQuery,
   useMarkAsReadMutation,
   useMarkAllAsReadMutation,
+  useDeleteNotificationMutation,
+  useClearAllNotificationsMutation,
 } = notificationApi;

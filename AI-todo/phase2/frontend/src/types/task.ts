@@ -17,6 +17,7 @@ export interface Task {
   title: string;
   description: string | null;
   status: TaskStatus;
+  due_date: string | null;  // ISO 8601 date (YYYY-MM-DD)
   created_at: string;   // ISO 8601 datetime
   updated_at: string;   // ISO 8601 datetime
 }
@@ -27,6 +28,7 @@ export interface Task {
 export interface TaskCreate {
   title: string;
   description?: string;
+  due_date?: string;  // ISO 8601 date (YYYY-MM-DD)
 }
 
 /**
@@ -36,6 +38,7 @@ export interface TaskUpdate {
   title?: string;
   description?: string;
   status?: TaskStatus;
+  due_date?: string | null;  // ISO 8601 date (YYYY-MM-DD), null to clear
 }
 
 /**

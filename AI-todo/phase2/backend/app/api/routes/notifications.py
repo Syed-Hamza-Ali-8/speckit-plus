@@ -6,6 +6,8 @@ from fastapi import APIRouter, HTTPException, Query, status
 
 from app.api.deps import CurrentUser, DbSession
 from app.schemas.notification import (
+    NotificationClearAllResponse,
+    NotificationDeleteResponse,
     NotificationListResponse,
     NotificationMarkAllReadResponse,
     NotificationMarkReadResponse,
@@ -81,3 +83,34 @@ async def get_unread_count(
     """
     count = await notification_service.get_unread_count(db, current_user.id)
     return UnreadCountResponse(unread_count=count)
+
+
+@router.delete("/{notification_id}", response_model=NotificationDeleteResponse)
+async def delete_notification(
+    notification_id: UUID,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> NotificationDeleteResponse:
+    """Delete a single notification.
+
+    Returns 404 if notification not found or not owned by current user.
+    """
+    deleted = await notification_service.delete_notification(
+        db, notification_id, current_user.id
+    )
+    if not deleted:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Notification not found",
+        )
+    return NotificationDeleteResponse(id=notification_id, deleted=True)
+
+
+@router.delete("", response_model=NotificationClearAllResponse)
+async def clear_all_notifications(
+    current_user: CurrentUser,
+    db: DbSession,
+) -> NotificationClearAllResponse:
+    """Delete all notifications for the current user."""
+    count = await notification_service.clear_all_notifications(db, current_user.id)
+    return NotificationClearAllResponse(deleted_count=count)

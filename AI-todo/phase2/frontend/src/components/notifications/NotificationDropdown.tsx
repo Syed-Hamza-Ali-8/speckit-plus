@@ -1,10 +1,11 @@
 import { motion } from 'framer-motion';
-import { Bell, CheckCheck } from 'lucide-react';
+import { Bell, CheckCheck, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { NotificationItem } from './NotificationItem';
 import {
   useGetNotificationsQuery,
   useMarkAllAsReadMutation,
+  useClearAllNotificationsMutation,
 } from '@/services/notificationApi';
 import { cn } from '@/lib/utils';
 
@@ -15,9 +16,11 @@ interface NotificationDropdownProps {
 export function NotificationDropdown({ onClose }: NotificationDropdownProps) {
   const { data, isLoading } = useGetNotificationsQuery({ limit: 10, offset: 0 });
   const [markAllAsRead, { isLoading: isMarkingAll }] = useMarkAllAsReadMutation();
+  const [clearAllNotifications, { isLoading: isClearing }] = useClearAllNotificationsMutation();
 
   const notifications = data?.notifications ?? [];
   const unreadCount = data?.unread_count ?? 0;
+  const totalCount = data?.total ?? 0;
 
   const handleMarkAllRead = async () => {
     try {
@@ -27,6 +30,17 @@ export function NotificationDropdown({ onClose }: NotificationDropdownProps) {
       }
     } catch {
       toast.error('Failed to mark all as read');
+    }
+  };
+
+  const handleClearAll = async () => {
+    try {
+      const result = await clearAllNotifications().unwrap();
+      if (result.deleted_count > 0) {
+        toast.success(`Cleared ${result.deleted_count} notifications`);
+      }
+    } catch {
+      toast.error('Failed to clear notifications');
     }
   };
 
@@ -54,29 +68,51 @@ export function NotificationDropdown({ onClose }: NotificationDropdownProps) {
           'border-b border-white/20 dark:border-white/10'
         )}
       >
-        <h3 className="text-sm font-semibold text-foreground">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
           Notifications
         </h3>
-        {unreadCount > 0 && (
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleMarkAllRead}
-            disabled={isMarkingAll}
-            className={cn(
-              'flex items-center gap-1.5',
-              'px-2 py-1 rounded-lg',
-              'text-xs font-medium',
-              'text-purple-600 dark:text-purple-400',
-              'hover:bg-purple-500/10',
-              'transition-colors duration-150',
-              'disabled:opacity-50 disabled:cursor-not-allowed'
-            )}
-          >
-            <CheckCheck className="h-3.5 w-3.5" />
-            Mark all read
-          </motion.button>
-        )}
+        <div className="flex items-center gap-2">
+          {unreadCount > 0 && (
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleMarkAllRead}
+              disabled={isMarkingAll}
+              className={cn(
+                'flex items-center gap-1.5',
+                'px-2 py-1 rounded-lg',
+                'text-xs font-medium',
+                'text-purple-600 dark:text-purple-400',
+                'hover:bg-purple-500/10',
+                'transition-colors duration-150',
+                'disabled:opacity-50 disabled:cursor-not-allowed'
+              )}
+            >
+              <CheckCheck className="h-3.5 w-3.5" />
+              Mark all read
+            </motion.button>
+          )}
+          {totalCount > 0 && (
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleClearAll}
+              disabled={isClearing}
+              className={cn(
+                'flex items-center gap-1.5',
+                'px-2 py-1 rounded-lg',
+                'text-xs font-medium',
+                'text-red-600 dark:text-red-400',
+                'hover:bg-red-500/10',
+                'transition-colors duration-150',
+                'disabled:opacity-50 disabled:cursor-not-allowed'
+              )}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Clear all
+            </motion.button>
+          )}
+        </div>
       </div>
 
       {/* Notification List */}

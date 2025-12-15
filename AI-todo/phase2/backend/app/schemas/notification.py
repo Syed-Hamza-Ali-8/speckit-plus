@@ -59,3 +59,16 @@ class NotificationCreate(BaseModel):
     title: str = Field(..., max_length=100, description="Short title")
     message: str = Field(..., max_length=500, description="Full message")
     action_url: str | None = Field(None, max_length=255, description="Deep link URL")
+
+
+class NotificationDeleteResponse(BaseModel):
+    """Schema for delete notification response."""
+
+    id: UUID = Field(..., description="Deleted notification ID")
+    deleted: bool = Field(..., description="Deletion status")
+
+
+class NotificationClearAllResponse(BaseModel):
+    """Schema for clear-all-notifications response."""
+
+    deleted_count: int = Field(..., description="Number of notifications deleted")

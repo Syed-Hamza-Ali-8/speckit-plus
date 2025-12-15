@@ -1,11 +1,11 @@
 """Task model with dual-layer validation (Python + Database)."""
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from enum import Enum
 from uuid import UUID, uuid4
 
 from pydantic import field_validator
-from sqlalchemy import CheckConstraint, Column, DateTime, Index, func
+from sqlalchemy import CheckConstraint, Column, Date, DateTime, Index, func
 from sqlalchemy import Enum as SAEnum
 from sqlmodel import Field, SQLModel
 
@@ -65,6 +65,11 @@ class Task(SQLModel, table=True):
             nullable=False,
         ),
         description="Task status",
+    )
+    due_date: date | None = Field(
+        default=None,
+        sa_column=Column(Date, nullable=True),
+        description="Optional due date for the task",
     )
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),

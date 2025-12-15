@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
+import { CalendarIcon, X } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -19,6 +20,7 @@ import { taskSchema, taskEditSchema } from '@/lib/validations/task';
 import type { TaskFormData, TaskEditFormData } from '@/lib/validations/task';
 import { useCreateTaskMutation, useUpdateTaskMutation } from '@/services/taskApi';
 import type { Task } from '@/types/task';
+import { cn } from '@/lib/utils';
 
 /**
  * Props for the TaskFormModal component
@@ -65,6 +67,7 @@ export function TaskFormModal({ open, onClose, task, onSuccess }: TaskFormModalP
       title: '',
       description: '',
       status: 'pending',
+      dueDate: '',
     },
   });
 
@@ -75,6 +78,7 @@ export function TaskFormModal({ open, onClose, task, onSuccess }: TaskFormModalP
         title: task.title,
         description: task.description || '',
         status: task.status,
+        dueDate: task.due_date || '',
       });
     } else if (!open) {
       // T066: Reset form on modal close
@@ -82,19 +86,24 @@ export function TaskFormModal({ open, onClose, task, onSuccess }: TaskFormModalP
         title: '',
         description: '',
         status: 'pending',
+        dueDate: '',
       });
     }
   }, [task, open, reset]);
 
   // Watch status for checkbox
   const currentStatus = watch('status');
+  const currentDueDate = watch('dueDate');
+
+  // Get today's date in YYYY-MM-DD format for min attribute
+  const today = new Date().toISOString().split('T')[0];
 
   // Form submission handler
   const onSubmit = async (data: TaskFormData | TaskEditFormData) => {
     try {
       if (isEditMode && task) {
         // T061: Update existing task - only send changed fields
-        const updateData: { title?: string; description?: string; status?: 'pending' | 'completed' } = {};
+        const updateData: { title?: string; description?: string; status?: 'pending' | 'completed'; due_date?: string | null } = {};
 
         // Only include title if changed
         if (data.title !== task.title) {
@@ -112,6 +121,13 @@ export function TaskFormModal({ open, onClose, task, onSuccess }: TaskFormModalP
         const formStatus = (data as TaskEditFormData).status;
         if (formStatus && formStatus !== task.status) {
           updateData.status = formStatus;
+        }
+
+        // Only include due_date if changed
+        const newDueDate = data.dueDate || null;
+        const oldDueDate = task.due_date || null;
+        if (newDueDate !== oldDueDate) {
+          updateData.due_date = newDueDate;
         }
 
         // Only make API call if something changed
@@ -132,6 +148,7 @@ export function TaskFormModal({ open, onClose, task, onSuccess }: TaskFormModalP
         await createTask({
           title: data.title,
           description: data.description || undefined,
+          due_date: data.dueDate || undefined,
         }).unwrap();
         // T063: Success toast for create
         toast.success('Task created!');
@@ -187,6 +204,38 @@ export function TaskFormModal({ open, onClose, task, onSuccess }: TaskFormModalP
             />
             {errors.description && (
               <p className="text-sm text-destructive">{errors.description.message}</p>
+            )}
+          </div>
+
+          {/* Due Date field */}
+          <div className="space-y-2">
+            <Label htmlFor="dueDate">Due Date (optional)</Label>
+            <div className="relative">
+              <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-gray-400" />
+              <Input
+                id="dueDate"
+                type="date"
+                min={today}
+                {...register('dueDate')}
+                className={cn(
+                  'pl-10 pr-10',
+                  'text-gray-900 dark:text-gray-100',
+                  '[&::-webkit-calendar-picker-indicator]:dark:invert'
+                )}
+                aria-invalid={!!errors.dueDate}
+              />
+              {currentDueDate && (
+                <button
+                  type="button"
+                  onClick={() => setValue('dueDate', '')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+                >
+                  <X className="h-3 w-3 text-gray-500 dark:text-gray-400" />
+                </button>
+              )}
+            </div>
+            {errors.dueDate && (
+              <p className="text-sm text-destructive">{errors.dueDate.message}</p>
             )}
           </div>
 

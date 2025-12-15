@@ -21,6 +21,7 @@ from app.schemas.task import (
     TaskUpdate,
 )
 from app.services import task_service
+from app.services import notification_service
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
@@ -126,6 +127,17 @@ async def create_task(
     Rate limited to 30 requests per hour per user.
     """
     task = await task_service.create_task(db, current_user.id, data)
+
+    # Create notification for task creation (only if has due date)
+    if task.due_date:
+        await notification_service.notify_task_created(
+            db=db,
+            user_id=current_user.id,
+            task_title=task.title,
+            task_id=task.id,
+            due_date=task.due_date,
+        )
+
     return TaskRead.model_validate(task)
 
 
@@ -163,12 +175,31 @@ async def update_task(
     Returns 404 if task doesn't exist or is not owned by current user.
     Rate limited to 60 requests per hour per user.
     """
+    # Get current task state before update for comparison
+    old_task = await task_service.get_task(db, task_id, current_user.id)
+    if old_task is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Task not found",
+        )
+    old_status = old_task.status
+
     task = await task_service.update_task(db, task_id, current_user.id, data)
     if task is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Task not found",
         )
+
+    # Create notification if task was just completed
+    if data.status == TaskStatus.COMPLETED and old_status != TaskStatus.COMPLETED:
+        await notification_service.notify_task_completed(
+            db=db,
+            user_id=current_user.id,
+            task_title=task.title,
+            task_id=task.id,
+        )
+
     return TaskRead.model_validate(task)
 
 
@@ -185,9 +216,25 @@ async def delete_task(
     Returns 404 if task doesn't exist or is not owned by current user.
     Rate limited to 30 requests per hour per user.
     """
+    # Get task info before deletion for notification
+    task = await task_service.get_task(db, task_id, current_user.id)
+    if task is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Task not found",
+        )
+    task_title = task.title
+
     deleted = await task_service.delete_task(db, task_id, current_user.id)
     if not deleted:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Task not found",
         )
+
+    # Create notification for task deletion
+    await notification_service.notify_task_deleted(
+        db=db,
+        user_id=current_user.id,
+        task_title=task_title,
+    )

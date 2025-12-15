@@ -52,6 +52,7 @@ export const taskApi = api.injectEndpoints({
     /**
      * Create new task
      * POST /tasks
+     * Also invalidates Notification cache since task creation with due date creates a notification
      */
     createTask: builder.mutation<Task, TaskCreate>({
       query: (task) => ({
@@ -59,12 +60,16 @@ export const taskApi = api.injectEndpoints({
         method: 'POST',
         body: task,
       }),
-      invalidatesTags: [{ type: TAG_TYPES.Task, id: 'LIST' }],
+      invalidatesTags: [
+        { type: TAG_TYPES.Task, id: 'LIST' },
+        TAG_TYPES.Notification,  // Invalidate notifications (task with due date creates notification)
+      ],
     }),
 
     /**
      * Update existing task
      * PATCH /tasks/:id
+     * Also invalidates Notification cache since completing a task creates a notification
      */
     updateTask: builder.mutation<Task, { id: string; data: TaskUpdate }>({
       query: ({ id, data }) => ({
@@ -75,12 +80,14 @@ export const taskApi = api.injectEndpoints({
       invalidatesTags: (_result, _error, { id }) => [
         { type: TAG_TYPES.Task, id },
         { type: TAG_TYPES.Task, id: 'LIST' },
+        TAG_TYPES.Notification,  // Invalidate notifications (completing task creates notification)
       ],
     }),
 
     /**
      * Delete task
      * DELETE /tasks/:id
+     * Also invalidates Notification cache since deleting a task creates a notification
      */
     deleteTask: builder.mutation<void, string>({
       query: (id) => ({
@@ -90,6 +97,7 @@ export const taskApi = api.injectEndpoints({
       invalidatesTags: (_result, _error, id) => [
         { type: TAG_TYPES.Task, id },
         { type: TAG_TYPES.Task, id: 'LIST' },
+        TAG_TYPES.Notification,  // Invalidate notifications (deleting task creates notification)
       ],
     }),
   }),

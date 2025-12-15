@@ -135,6 +135,7 @@ async def create_task(db: AsyncSession, user_id: UUID, data: TaskCreate) -> Task
         user_id=user_id,
         title=data.title,
         description=data.description,
+        due_date=data.due_date,
         status=TaskStatus.PENDING,
     )
     db.add(task)

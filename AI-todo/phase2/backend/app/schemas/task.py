@@ -24,6 +24,11 @@ class TaskCreate(BaseModel):
         description="Optional task description",
         json_schema_extra={"example": "Milk, eggs, bread"},
     )
+    due_date: date | None = Field(
+        default=None,
+        description="Optional due date for the task",
+        json_schema_extra={"example": "2025-12-31"},
+    )
 
 
 class TaskUpdate(BaseModel):
@@ -44,6 +49,10 @@ class TaskUpdate(BaseModel):
         default=None,
         description="Updated task status",
     )
+    due_date: date | None = Field(
+        default=None,
+        description="Updated due date",
+    )
 
 
 class TaskResponse(BaseModel):
@@ -54,6 +63,7 @@ class TaskResponse(BaseModel):
     title: str = Field(..., description="Task title")
     description: str | None = Field(..., description="Task description")
     status: TaskStatus = Field(..., description="Task status")
+    due_date: date | None = Field(..., description="Due date")
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
 
@@ -71,6 +81,7 @@ class TaskRead(BaseModel):
     title: str = Field(..., description="Task title")
     description: str | None = Field(..., description="Task description")
     status: TaskStatus = Field(..., description="Task status")
+    due_date: date | None = Field(None, description="Due date")
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
 
