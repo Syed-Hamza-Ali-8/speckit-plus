@@ -146,9 +146,9 @@ export const notificationApi = api.injectEndpoints({
           )
         );
 
-        // Update unread count cache optimistically
+        // Update unread count cache - will be refreshed by invalidatesTags
         const patchUnreadCount = dispatch(
-          notificationApi.util.updateQueryData('getUnreadCount', undefined, (draft) => {
+          notificationApi.util.updateQueryData('getUnreadCount', undefined, (_draft) => {
             // We don't know if it was unread, so we'll let the invalidation handle it
           })
         );
