@@ -10,6 +10,7 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
 from app.api.routes import auth, notifications, tasks
+from app.chat import chat_router, websocket_router
 from app.core.database import close_db, get_async_engine
 from app.middleware.rate_limit import limiter
 
@@ -61,6 +62,12 @@ app.include_router(tasks.router)
 
 # Mount notifications router at /notifications prefix
 app.include_router(notifications.router)
+
+# Mount chat router at /chat prefix
+app.include_router(chat_router)
+
+# Mount WebSocket router for streaming chat
+app.include_router(websocket_router)
 
 
 @app.get("/", tags=["root"])

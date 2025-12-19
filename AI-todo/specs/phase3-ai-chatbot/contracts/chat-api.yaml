@@ -1,0 +1,289 @@
+openapi: 3.1.0
+info:
+  title: Todo AI Chat API
+  version: 1.0.0
+  description: AI-powered chat interface for task management
+
+servers:
+  - url: http://localhost:8000
+    description: Development server
+
+paths:
+  /chat:
+    post:
+      operationId: sendChatMessage
+      summary: Send a chat message
+      description: Send a natural language message to the AI assistant
+      tags:
+        - Chat
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+            examples:
+              createTask:
+                summary: Create a task
+                value:
+                  message: "Add a task to buy groceries tomorrow"
+                  session_id: null
+              listTasks:
+                summary: List tasks
+                value:
+                  message: "Show my pending tasks"
+                  session_id: "550e8400-e29b-41d4-a716-446655440000"
+              deleteTask:
+                summary: Delete task
+                value:
+                  message: "Delete that task"
+                  session_id: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '200':
+          description: Chat response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+              examples:
+                taskCreated:
+                  summary: Task created response
+                  value:
+                    response: "✅ Created task: 'Buy groceries' (due tomorrow)"
+                    session_id: "550e8400-e29b-41d4-a716-446655440000"
+                    intent: "create"
+                    actions:
+                      - tool: "create_task"
+                        success: true
+                        summary: "Created task 'Buy groceries'"
+                    metadata:
+                      processing_time_ms: 1234
+                      agent_chain: ["ConversationAgent", "TaskManagerAgent"]
+                      model: "gpt-4o-mini"
+                confirmationRequired:
+                  summary: Confirmation needed
+                  value:
+                    response: "⚠️ Are you sure you want to delete 'Buy groceries'? This cannot be undone. Reply 'yes' to confirm."
+                    session_id: "550e8400-e29b-41d4-a716-446655440000"
+                    intent: "delete"
+                    actions: []
+                    metadata:
+                      processing_time_ms: 456
+                      agent_chain: ["ConversationAgent", "GuardrailAgent"]
+                      model: "gpt-4o-mini"
+        '400':
+          description: Bad request (invalid message, session expired)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized (invalid or missing token)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: OpenAI API error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '504':
+          description: Tool timeout
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /chat/stream:
+    get:
+      operationId: streamChat
+      summary: WebSocket chat streaming endpoint
+      description: |
+        WebSocket endpoint for real-time chat streaming.
+
+        **Connection**: `ws://localhost:8000/chat/stream?token=<jwt>`
+
+        **Client → Server Messages**:
+        ```json
+        { "type": "message", "content": "Show my tasks", "session_id": null }
+        { "type": "ping" }
+        ```
+
+        **Server → Client Messages**:
+        ```json
+        { "type": "token", "content": "You ", "metadata": {} }
+        { "type": "tool_start", "content": "", "metadata": { "tool": "list_tasks" } }
+        { "type": "tool_end", "content": "", "metadata": { "tool": "list_tasks", "success": true } }
+        { "type": "complete", "content": "You have 3 tasks.", "metadata": { "session_id": "...", "intent": "read" } }
+        { "type": "error", "content": "Rate limit exceeded", "metadata": { "code": "RATE_LIMITED" } }
+        { "type": "pong" }
+        ```
+      tags:
+        - Chat
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+          description: JWT authentication token
+      responses:
+        '101':
+          description: WebSocket upgrade successful
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    ChatRequest:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          minLength: 1
+          maxLength: 2000
+          description: User's natural language message
+        session_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Optional session ID for context continuity
+
+    ChatResponse:
+      type: object
+      required:
+        - response
+        - session_id
+        - intent
+        - actions
+        - metadata
+      properties:
+        response:
+          type: string
+          description: AI-generated response text
+        session_id:
+          type: string
+          format: uuid
+          description: Session ID for follow-up messages
+        intent:
+          type: string
+          enum: [read, create, update, delete, complete, plan, chat]
+          description: Detected user intent
+        actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActionTaken'
+          description: MCP tools invoked
+        metadata:
+          $ref: '#/components/schemas/ChatMetadata'
+
+    ActionTaken:
+      type: object
+      required:
+        - tool
+        - success
+        - summary
+      properties:
+        tool:
+          type: string
+          enum: [list_tasks, create_task, update_task, complete_task, delete_task]
+        success:
+          type: boolean
+        summary:
+          type: string
+          description: Human-readable result summary
+
+    ChatMetadata:
+      type: object
+      required:
+        - processing_time_ms
+        - agent_chain
+        - model
+      properties:
+        processing_time_ms:
+          type: integer
+          description: Total processing time in milliseconds
+        agent_chain:
+          type: array
+          items:
+            type: string
+          description: Agents involved in processing
+        model:
+          type: string
+          description: LLM model used
+
+    WSIncomingMessage:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum: [message, ping]
+        content:
+          type: string
+          nullable: true
+        session_id:
+          type: string
+          format: uuid
+          nullable: true
+
+    WSOutgoingMessage:
+      type: object
+      required:
+        - type
+        - content
+      properties:
+        type:
+          type: string
+          enum: [token, tool_start, tool_end, complete, error, pong]
+        content:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - code
+        - message
+      properties:
+        error:
+          type: boolean
+          const: true
+        code:
+          type: string
+          enum:
+            - AUTH_REQUIRED
+            - SESSION_EXPIRED
+            - RATE_LIMITED
+            - INTENT_UNCLEAR
+            - TOOL_TIMEOUT
+            - TOOL_ERROR
+            - GUARDRAIL_BLOCKED
+            - OPENAI_ERROR
+        message:
+          type: string
+          description: Human-readable error message
+
+tags:
+  - name: Chat
+    description: AI-powered chat endpoints for task management

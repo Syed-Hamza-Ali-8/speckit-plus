@@ -8,6 +8,7 @@ export const ROUTES = {
   TASKS: '/tasks',
   PROFILE: '/profile',
   SETTINGS: '/settings',
+  CHAT: '/chat',
 } as const;
 
 export type RoutePath = (typeof ROUTES)[keyof typeof ROUTES];

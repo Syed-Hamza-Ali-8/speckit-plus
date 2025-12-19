@@ -11,6 +11,7 @@ import { TasksPage } from '@/pages/TasksPage';
 import { LandingPage } from '@/pages/LandingPage';
 import { ProfilePage } from '@/pages/ProfilePage';
 import { SettingsPage } from '@/pages/SettingsPage';
+import { ChatPage } from '@/pages/ChatPage';
 import { useAuth } from '@/hooks/useAuth';
 
 function App() {
@@ -74,6 +75,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <SettingsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={ROUTES.CHAT}
+            element={
+              <ProtectedRoute>
+                <ChatPage />
               </ProtectedRoute>
             }
           />
