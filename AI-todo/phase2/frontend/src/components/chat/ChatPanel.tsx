@@ -53,11 +53,12 @@ export function ChatPanel({ isOpen, onClose }: ChatPanelProps) {
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             className={cn(
               'fixed z-50',
-              // Mobile: full screen with margins
-              'inset-4 md:inset-auto',
-              // Desktop: bottom-right corner
+              // Mobile: full screen with safe margins (top has more space for browser UI)
+              'top-16 bottom-4 left-4 right-4',
+              'md:inset-auto',
+              // Desktop: bottom-right corner with fixed size
               'md:bottom-6 md:right-6',
-              'md:w-[400px] md:h-[600px]',
+              'md:w-[400px] md:h-[550px]',
               // Styling
               'flex flex-col',
               'bg-white/80 dark:bg-gray-900/90',
