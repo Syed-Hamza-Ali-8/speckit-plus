@@ -19,6 +19,7 @@ from app.mcp.schemas import (
 from app.models.task import TaskStatus
 from app.schemas.task import TaskCreate, TaskRead, TaskUpdate
 from app.services import task_service
+from app.services import notification_service
 
 
 class TaskTools:
@@ -111,6 +112,15 @@ class TaskTools:
                 data=task_create,
             )
 
+            # Create notification for task creation
+            await notification_service.notify_task_created(
+                db=db,
+                user_id=user_id,
+                task_title=task.title,
+                task_id=task.id,
+                due_date=task.due_date,
+            )
+
             return MCPToolResult(
                 success=True,
                 data=TaskRead.model_validate(task).model_dump(mode="json"),
@@ -170,6 +180,14 @@ class TaskTools:
                     error_code="NOT_FOUND",
                 )
 
+            # Create notification for task update
+            await notification_service.notify_task_updated(
+                db=db,
+                user_id=user_id,
+                task_title=task.title,
+                task_id=task.id,
+            )
+
             return MCPToolResult(
                 success=True,
                 data=TaskRead.model_validate(task).model_dump(mode="json"),
@@ -220,6 +238,14 @@ class TaskTools:
                     error_code="NOT_FOUND",
                 )
 
+            # Create notification for task completion
+            await notification_service.notify_task_completed(
+                db=db,
+                user_id=user_id,
+                task_title=task.title,
+                task_id=task.id,
+            )
+
             return MCPToolResult(
                 success=True,
                 data=TaskRead.model_validate(task).model_dump(mode="json"),
@@ -248,6 +274,22 @@ class TaskTools:
             MCPToolResult indicating success or failure.
         """
         try:
+            # Fetch task before deletion to get title for notification
+            task = await task_service.get_task(
+                db=db,
+                task_id=input_data.task_id,
+                user_id=user_id,
+            )
+
+            if task is None:
+                return MCPToolResult(
+                    success=False,
+                    error="Task not found or not owned by user",
+                    error_code="NOT_FOUND",
+                )
+
+            task_title = task.title
+
             deleted = await task_service.delete_task(
                 db=db,
                 task_id=input_data.task_id,
@@ -260,6 +302,13 @@ class TaskTools:
                     error="Task not found or not owned by user",
                     error_code="NOT_FOUND",
                 )
+
+            # Create notification for task deletion
+            await notification_service.notify_task_deleted(
+                db=db,
+                user_id=user_id,
+                task_title=task_title,
+            )
 
             return MCPToolResult(
                 success=True,

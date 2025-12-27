@@ -383,3 +383,30 @@ async def notify_task_deleted(
         message=f"'{task_title}' has been removed",
         action_url="/tasks",
     )
+
+
+async def notify_task_updated(
+    db: AsyncSession,
+    user_id: UUID,
+    task_title: str,
+    task_id: UUID,
+) -> Notification:
+    """Create notification when a task is updated.
+
+    Args:
+        db: Async database session.
+        user_id: User ID to notify.
+        task_title: Title of the updated task.
+        task_id: ID of the updated task.
+
+    Returns:
+        Created notification.
+    """
+    return await create_notification(
+        db=db,
+        user_id=user_id,
+        type="task_updated",
+        title="Task Updated",
+        message=f"'{task_title}' has been updated",
+        action_url=f"/tasks?highlight={task_id}",
+    )

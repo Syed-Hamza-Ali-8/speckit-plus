@@ -9,6 +9,7 @@ from typing import Any
 from uuid import UUID
 
 from mcp.server.fastmcp import FastMCP
+from app.services import notification_service
 
 # Create the MCP server instance
 mcp = FastMCP(name="Todo MCP Server")
@@ -69,6 +70,17 @@ async def add_task(
             user_id=_user_id,
             data=task_create,
         )
+
+        # Create notification for task creation
+        print(f"[MCP Server] Creating notification for task: {task.title}")
+        notification = await notification_service.notify_task_created(
+            db=_db_session,
+            user_id=_user_id,
+            task_title=task.title,
+            task_id=task.id,
+            due_date=task.due_date,
+        )
+        print(f"[MCP Server] Notification created with ID: {notification.id}")
 
         return {
             "task_id": str(task.id),
@@ -164,6 +176,14 @@ async def complete_task(
                 "error": "Task not found or not owned by user",
             }
 
+        # Create notification for task completion
+        await notification_service.notify_task_completed(
+            db=_db_session,
+            user_id=_user_id,
+            task_title=task.title,
+            task_id=task.id,
+        )
+
         return {
             "task_id": str(task.id),
             "status": "completed",
@@ -223,6 +243,13 @@ async def delete_task(
                 "status": "error",
                 "error": "Failed to delete task",
             }
+
+        # Create notification for task deletion
+        await notification_service.notify_task_deleted(
+            db=_db_session,
+            user_id=_user_id,
+            task_title=title,
+        )
 
         return {
             "task_id": task_id,
@@ -293,6 +320,14 @@ async def update_task(
                 "status": "not_found",
                 "error": "Task not found or not owned by user",
             }
+
+        # Create notification for task update
+        await notification_service.notify_task_updated(
+            db=_db_session,
+            user_id=_user_id,
+            task_title=task.title,
+            task_id=task.id,
+        )
 
         return {
             "task_id": str(task.id),
