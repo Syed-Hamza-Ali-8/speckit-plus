@@ -1,0 +1,57 @@
+# Default values for todo-app
+# This is a YAML-formatted file.
+
+# Global settings
+namespace: todo-app
+
+# Backend configuration
+backend:
+  name: todo-backend
+  image: todo-backend
+  tag: latest
+  replicas: 1
+  port: 8000
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 250m
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+# Frontend configuration
+frontend:
+  name: todo-frontend
+  image: todo-frontend
+  tag: latest
+  replicas: 1
+  port: 3000
+  nodePort: 30000
+  resources:
+    requests:
+      memory: 128Mi
+      cpu: 100m
+    limits:
+      memory: 256Mi
+      cpu: 250m
+
+# Environment configuration (stored in ConfigMap)
+config:
+  backendUrl: "http://todo-backend:8000"
+  nodeEnv: "production"
+  pythonEnv: "production"
+
+# Secrets configuration (set via --set flags, never commit actual values)
+secrets:
+  databaseUrl: ""
+  openaiApiKey: ""
+  betterAuthSecret: ""
+
+# Image pull policy (Never for local Minikube images)
+imagePullPolicy: Never
+
+# Security context
+securityContext:
+  runAsNonRoot: false
+  runAsUser: 0
+  fsGroup: 0

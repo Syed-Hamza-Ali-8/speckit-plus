@@ -1,0 +1,18 @@
+apiVersion: v2
+name: todo-app
+description: Todo AI Chatbot Application - Phase IV Kubernetes Deployment
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - todo
+  - chatbot
+  - fastapi
+  - react
+  - vite
+maintainers:
+  - name: Developer
+    email: developer@example.com
+home: https://github.com/hamza/AI-todo
+sources:
+  - https://github.com/hamza/AI-todo

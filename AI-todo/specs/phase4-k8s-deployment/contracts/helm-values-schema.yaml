@@ -1,0 +1,219 @@
+# Helm Values Schema for todo-app Chart
+# JSON Schema for values.yaml validation
+# Usage: helm lint --strict ./helm/todo-app
+
+$schema: "http://json-schema.org/draft-07/schema#"
+title: Todo App Helm Values
+description: Configuration values for the Todo AI Chatbot Kubernetes deployment
+type: object
+required:
+  - namespace
+  - backend
+  - frontend
+  - config
+  - secrets
+
+properties:
+  namespace:
+    type: string
+    description: Kubernetes namespace for all resources
+    default: todo-app
+    pattern: "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+
+  backend:
+    type: object
+    description: Backend (FastAPI) deployment configuration
+    required:
+      - name
+      - image
+      - tag
+      - replicas
+      - port
+    properties:
+      name:
+        type: string
+        default: todo-backend
+      image:
+        type: string
+        default: todo-backend
+      tag:
+        type: string
+        default: latest
+      replicas:
+        type: integer
+        minimum: 1
+        maximum: 10
+        default: 1
+      port:
+        type: integer
+        default: 8000
+      resources:
+        type: object
+        properties:
+          requests:
+            type: object
+            properties:
+              memory:
+                type: string
+                default: "256Mi"
+              cpu:
+                type: string
+                default: "250m"
+          limits:
+            type: object
+            properties:
+              memory:
+                type: string
+                default: "512Mi"
+              cpu:
+                type: string
+                default: "500m"
+
+  frontend:
+    type: object
+    description: Frontend (Next.js) deployment configuration
+    required:
+      - name
+      - image
+      - tag
+      - replicas
+      - port
+      - nodePort
+    properties:
+      name:
+        type: string
+        default: todo-frontend
+      image:
+        type: string
+        default: todo-frontend
+      tag:
+        type: string
+        default: latest
+      replicas:
+        type: integer
+        minimum: 1
+        maximum: 10
+        default: 1
+      port:
+        type: integer
+        default: 3000
+      nodePort:
+        type: integer
+        minimum: 30000
+        maximum: 32767
+        default: 30000
+        description: NodePort for external access (must be in range 30000-32767)
+      resources:
+        type: object
+        properties:
+          requests:
+            type: object
+            properties:
+              memory:
+                type: string
+                default: "256Mi"
+              cpu:
+                type: string
+                default: "250m"
+          limits:
+            type: object
+            properties:
+              memory:
+                type: string
+                default: "512Mi"
+              cpu:
+                type: string
+                default: "500m"
+
+  config:
+    type: object
+    description: Non-sensitive configuration (stored in ConfigMap)
+    properties:
+      backendUrl:
+        type: string
+        default: "http://todo-backend:8000"
+        description: Internal service URL for frontend to reach backend
+      nodeEnv:
+        type: string
+        enum:
+          - production
+          - development
+          - test
+        default: production
+
+  secrets:
+    type: object
+    description: Sensitive credentials (stored in Kubernetes Secret)
+    properties:
+      databaseUrl:
+        type: string
+        description: Neon PostgreSQL connection string
+        examples:
+          - "postgresql://user:pass@host.neon.tech/dbname?sslmode=require"
+      openaiApiKey:
+        type: string
+        description: OpenAI API key for chatbot
+        pattern: "^sk-.*"
+      betterAuthSecret:
+        type: string
+        description: JWT signing secret for authentication
+        minLength: 32
+
+  # Optional overrides
+  imagePullPolicy:
+    type: string
+    enum:
+      - Always
+      - Never
+      - IfNotPresent
+    default: Never
+    description: Image pull policy (Never for local Minikube images)
+
+  securityContext:
+    type: object
+    description: Pod security context settings
+    properties:
+      runAsNonRoot:
+        type: boolean
+        default: true
+      runAsUser:
+        type: integer
+        default: 1000
+      fsGroup:
+        type: integer
+        default: 1000
+
+# Example values.yaml:
+#
+# namespace: todo-app
+#
+# backend:
+#   name: todo-backend
+#   image: todo-backend
+#   tag: latest
+#   replicas: 1
+#   port: 8000
+#   resources:
+#     requests:
+#       memory: "256Mi"
+#       cpu: "250m"
+#     limits:
+#       memory: "512Mi"
+#       cpu: "500m"
+#
+# frontend:
+#   name: todo-frontend
+#   image: todo-frontend
+#   tag: latest
+#   replicas: 1
+#   port: 3000
+#   nodePort: 30000
+#
+# config:
+#   backendUrl: "http://todo-backend:8000"
+#   nodeEnv: "production"
+#
+# secrets:
+#   databaseUrl: ""     # Set via: --set secrets.databaseUrl="..."
+#   openaiApiKey: ""    # Set via: --set secrets.openaiApiKey="..."
+#   betterAuthSecret: "" # Set via: --set secrets.betterAuthSecret="..."

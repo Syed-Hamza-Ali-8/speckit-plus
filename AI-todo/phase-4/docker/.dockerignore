@@ -1,0 +1,65 @@
+# Git
+.git/
+.gitignore
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Documentation
+*.md
+docs/
+specs/
+history/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+*.egg-info/
+.coverage
+.pytest_cache/
+htmlcov/
+
+# Node.js
+**/node_modules/
+**/.next/
+**/dist/
+**/build/
+**/coverage/
+
+# Environment
+.env*
+!.env.example
+
+# Docker
+Dockerfile*
+.dockerignore
+docker-compose*.yml
+
+# Kubernetes/Helm
+helm/
+*.secret.yaml
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Phase 1 (not needed for container build)
+phase1/
+
+# Temporary
+*.tmp
+*.temp
+nul
