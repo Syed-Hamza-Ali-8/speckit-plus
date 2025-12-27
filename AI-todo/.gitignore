@@ -53,3 +53,20 @@ logs/
 htmlcov/
 .coverage.xml
 .pytest_cache/
+
+# Node.js
+node_modules/
+
+# Kubernetes/Helm secrets
+*.secret.yaml
+secrets/
+.kube/
+kubeconfig*
+*.key
+*.crt
+
+# Docker
+.docker/
+
+# Minikube
+.minikube/
