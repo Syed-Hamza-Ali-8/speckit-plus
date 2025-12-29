@@ -230,7 +230,7 @@ await notification_service.create_notification(
     db,
     user.id,
     "welcome",
-    "Welcome to TaskFlow!",
+    "Welcome to TaskGPT!",
     "Get started by creating your first task.",
     "/tasks"
 )

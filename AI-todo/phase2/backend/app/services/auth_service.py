@@ -73,7 +73,7 @@ async def register_user(db: AsyncSession, data: UserCreate) -> User | None:
         db,
         user.id,
         "welcome",
-        "Welcome to TaskFlow!",
+        "Welcome to TaskGPT!",
         "Get started by creating your first task.",
         "/tasks",
     )

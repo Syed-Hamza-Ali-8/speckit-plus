@@ -47,7 +47,7 @@ const testimonials = [
     name: 'Sarah Chen',
     role: 'Product Manager',
     avatar: 'S',
-    content: 'TaskFlow transformed how our team manages projects. The UI is absolutely beautiful!',
+    content: 'TaskGPT transformed how our team manages projects. The UI is absolutely beautiful!',
     rating: 5,
   },
   {
@@ -114,7 +114,7 @@ export function LandingPage() {
                 )}
               >
                 <Sparkles className="h-4 w-4" />
-                Introducing TaskFlow 2.0
+                Introducing TaskGPT 2.0
                 <ArrowRight className="h-3 w-3" />
               </span>
             </motion.div>
@@ -271,7 +271,7 @@ export function LandingPage() {
               Everything you need to <span className="text-gradient">stay productive</span>
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Powerful features wrapped in a beautiful interface. TaskFlow adapts to your workflow, not the other way around.
+              Powerful features wrapped in a beautiful interface. TaskGPT adapts to your workflow, not the other way around.
             </p>
           </motion.div>
 
@@ -317,7 +317,7 @@ export function LandingPage() {
               Loved by <span className="text-gradient">thousands</span>
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              See what our users have to say about their experience with TaskFlow.
+              See what our users have to say about their experience with TaskGPT.
             </p>
           </motion.div>
 
@@ -417,7 +417,7 @@ export function LandingPage() {
               </span>
             </div>
             <p className="text-sm text-muted-foreground">
-              &copy; {new Date().getFullYear()} TaskFlow. All rights reserved.
+              &copy; {new Date().getFullYear()} TaskGPT. All rights reserved.
             </p>
           </div>
         </div>

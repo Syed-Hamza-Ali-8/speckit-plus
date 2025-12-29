@@ -26,10 +26,13 @@ RUN npm run build
 # Stage 2: Runtime - Serve with nginx
 FROM nginx:alpine AS runtime
 
+# Remove default config and entrypoint scripts to avoid conflicts
+RUN rm -rf /etc/nginx/conf.d/* /docker-entrypoint.d/*
+
 # Copy built assets from builder
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copy custom nginx config from phase-4
+# Copy custom nginx config (full config without pid to avoid duplicate)
 COPY phase-4/docker/nginx.conf /etc/nginx/nginx.conf
 
 # Expose port
@@ -39,5 +42,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD wget -qO- http://localhost:3000/health || exit 1
 
-# Start nginx (uses default config without pid issues)
+# Start nginx
 CMD ["nginx", "-g", "daemon off;"]

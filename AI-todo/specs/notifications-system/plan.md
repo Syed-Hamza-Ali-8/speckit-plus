@@ -304,7 +304,7 @@ useMarkAllAsReadMutation()
 ```python
 # In register_user after user creation
 await notification_service.create_notification(
-    db, user.id, "welcome", "Welcome to TaskFlow!",
+    db, user.id, "welcome", "Welcome to TaskGPT!",
     "Get started by creating your first task.", "/tasks"
 )
 ```

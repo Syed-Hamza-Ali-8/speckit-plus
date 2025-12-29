@@ -78,7 +78,7 @@ Implement an in-app notifications system with real-time badge updates in the hea
 | `task_due` | Clock | Task approaching due date | "Task 'Project Report' is due tomorrow" |
 | `task_overdue` | AlertTriangle | Task past due date | "Task 'Meeting Notes' is overdue" |
 | `task_completed` | CheckCircle | Task marked complete | "You completed 'Weekly Review'" |
-| `welcome` | Star | New user welcome | "Welcome to TaskFlow!" |
+| `welcome` | Star | New user welcome | "Welcome to TaskGPT!" |
 | `system` | Info | System announcements | "New features available" |
 
 ### 2. Notification Model
