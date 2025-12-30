@@ -413,7 +413,7 @@ export function LandingPage() {
                 <CheckSquare className="h-4 w-4 text-white" />
               </div>
               <span className="font-bold">
-                <span className="text-gradient">Task</span>Flow
+                <span className="text-gradient">Task</span>GPT
               </span>
             </div>
             <p className="text-sm text-muted-foreground">

@@ -70,7 +70,7 @@ export function Header(_props: HeaderProps) {
           </motion.div>
           <span className="font-bold text-lg tracking-tight">
             <span className="text-gradient">Task</span>
-            <span className="text-foreground">Flow</span>
+            <span className="text-foreground">GPT</span>
           </span>
         </Link>
 
