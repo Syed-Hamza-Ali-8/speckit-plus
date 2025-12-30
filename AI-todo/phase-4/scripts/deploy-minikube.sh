@@ -1,5 +1,5 @@
 #!/bin/bash
-# Deploy Todo App to Minikube
+# Deploy TaskGPT to Minikube
 # Usage: ./phase-4/scripts/deploy-minikube.sh
 
 set -e
@@ -7,9 +7,9 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PHASE4_DIR="$(dirname "$SCRIPT_DIR")"
 PROJECT_ROOT="$(dirname "$PHASE4_DIR")"
-HELM_CHART="$PHASE4_DIR/helm/todo-app"
-NAMESPACE="todo-app"
-RELEASE_NAME="todo-app"
+HELM_CHART="$PHASE4_DIR/helm/taskgpt"
+NAMESPACE="taskgpt"
+RELEASE_NAME="taskgpt"
 
 # Colors for output
 RED='\033[0;31m'
@@ -18,7 +18,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-echo -e "${BLUE}=== Todo App Minikube Deployment ===${NC}"
+echo -e "${BLUE}=== TaskGPT Minikube Deployment ===${NC}"
 echo "Project root: $PROJECT_ROOT"
 echo "Helm chart: $HELM_CHART"
 
@@ -95,8 +95,8 @@ echo -e "${GREEN}✓ Helm deployment complete${NC}"
 
 # Wait for pods to be ready
 echo -e "\n${YELLOW}Waiting for pods to be ready...${NC}"
-kubectl wait --for=condition=ready pod -l app=todo-backend -n $NAMESPACE --timeout=120s || true
-kubectl wait --for=condition=ready pod -l app=todo-frontend -n $NAMESPACE --timeout=120s || true
+kubectl wait --for=condition=ready pod -l app=taskgpt-backend -n $NAMESPACE --timeout=120s || true
+kubectl wait --for=condition=ready pod -l app=taskgpt-frontend -n $NAMESPACE --timeout=120s || true
 
 # Show deployment status
 echo -e "\n${BLUE}=== Deployment Status ===${NC}"
@@ -107,10 +107,10 @@ kubectl get services -n $NAMESPACE
 # Get access URL
 echo -e "\n${GREEN}=== Access Information ===${NC}"
 echo "To access the application, run:"
-echo -e "  ${YELLOW}minikube service todo-frontend -n $NAMESPACE${NC}"
+echo -e "  ${YELLOW}minikube service taskgpt-frontend -n $NAMESPACE${NC}"
 echo ""
 echo "Or use port-forward:"
-echo -e "  ${YELLOW}kubectl port-forward svc/todo-frontend 3000:3000 -n $NAMESPACE${NC}"
+echo -e "  ${YELLOW}kubectl port-forward svc/taskgpt-frontend 3000:3000 -n $NAMESPACE${NC}"
 echo "  Then open: http://localhost:3000"
 
 echo -e "\n${GREEN}=== Deployment Complete ===${NC}"

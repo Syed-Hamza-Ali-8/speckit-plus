@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "taskgpt.fullname" . }}-config
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "taskgpt.labels" . | nindent 4 }}
+data:
+  BACKEND_URL: http://taskgpt-backend:8000
+  NODE_ENV: production
+  PYTHON_ENV: production

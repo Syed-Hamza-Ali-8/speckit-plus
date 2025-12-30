@@ -4,11 +4,11 @@ metadata:
   name: {{ .Values.frontend.name }}
   namespace: {{ .Values.namespace }}
   labels:
-    {{- include "todo-app.frontendLabels" . | nindent 4 }}
+    {{- include "taskgpt.frontendLabels" . | nindent 4 }}
 spec:
   type: NodePort
   selector:
-    {{- include "todo-app.frontendSelectorLabels" . | nindent 6 }}
+    {{- include "taskgpt.frontendSelectorLabels" . | nindent 6 }}
   ports:
     - name: http
       port: {{ .Values.frontend.port }}

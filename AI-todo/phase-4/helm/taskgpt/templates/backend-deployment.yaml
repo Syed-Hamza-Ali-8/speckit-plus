@@ -4,16 +4,16 @@ metadata:
   name: {{ .Values.backend.name }}
   namespace: {{ .Values.namespace }}
   labels:
-    {{- include "todo-app.backendLabels" . | nindent 4 }}
+    {{- include "taskgpt.backendLabels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.backend.replicas }}
   selector:
     matchLabels:
-      {{- include "todo-app.backendSelectorLabels" . | nindent 6 }}
+      {{- include "taskgpt.backendSelectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "todo-app.backendSelectorLabels" . | nindent 8 }}
+        {{- include "taskgpt.backendSelectorLabels" . | nindent 8 }}
     spec:
       securityContext:
         runAsNonRoot: {{ .Values.securityContext.runAsNonRoot }}
@@ -29,9 +29,9 @@ spec:
               protocol: TCP
           envFrom:
             - configMapRef:
-                name: {{ include "todo-app.fullname" . }}-config
+                name: {{ include "taskgpt.fullname" . }}-config
             - secretRef:
-                name: {{ include "todo-app.fullname" . }}-secrets
+                name: {{ include "taskgpt.fullname" . }}-secrets
           resources:
             requests:
               memory: {{ .Values.backend.resources.requests.memory | quote }}

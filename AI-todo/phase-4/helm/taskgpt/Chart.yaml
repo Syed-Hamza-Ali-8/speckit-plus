@@ -1,6 +1,6 @@
 apiVersion: v2
-name: todo-app
-description: Todo AI Chatbot Application - Phase IV Kubernetes Deployment
+name: taskgpt
+description: TaskGPT - AI-Powered Task Management Application - Phase IV Kubernetes Deployment
 type: application
 version: 1.0.0
 appVersion: "1.0.0"

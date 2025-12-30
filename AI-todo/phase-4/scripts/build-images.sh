@@ -1,5 +1,5 @@
 #!/bin/bash
-# Build Docker images for Todo App
+# Build Docker images for TaskGPT
 # Usage: ./phase-4/scripts/build-images.sh
 
 set -e
@@ -8,7 +8,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PHASE4_DIR="$(dirname "$SCRIPT_DIR")"
 PROJECT_ROOT="$(dirname "$PHASE4_DIR")"
 
-echo "=== Building Todo App Docker Images ==="
+echo "=== Building TaskGPT Docker Images ==="
 echo "Project root: $PROJECT_ROOT"
 echo "Phase 4 dir: $PHASE4_DIR"
 
@@ -30,7 +30,7 @@ cd "$PROJECT_ROOT"
 
 # Build backend image using Dockerfile from phase-4/docker
 echo -e "\n${GREEN}Building backend image...${NC}"
-docker build -f phase-4/docker/backend.Dockerfile -t todo-backend:latest .
+docker build -f phase-4/docker/backend.Dockerfile -t taskgpt-backend:latest .
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✓ Backend image built successfully${NC}"
 else
@@ -40,7 +40,7 @@ fi
 
 # Build frontend image using Dockerfile from phase-4/docker
 echo -e "\n${GREEN}Building frontend image...${NC}"
-docker build -f phase-4/docker/frontend.Dockerfile -t todo-frontend:latest .
+docker build -f phase-4/docker/frontend.Dockerfile -t taskgpt-frontend:latest .
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✓ Frontend image built successfully${NC}"
 else
