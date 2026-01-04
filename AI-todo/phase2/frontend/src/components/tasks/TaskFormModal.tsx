@@ -68,6 +68,8 @@ export function TaskFormModal({ open, onClose, task, onSuccess }: TaskFormModalP
       description: '',
       status: 'pending',
       dueDate: '',
+      priority: 'medium',
+      tags: [],
     },
   });
 
@@ -79,6 +81,8 @@ export function TaskFormModal({ open, onClose, task, onSuccess }: TaskFormModalP
         description: task.description || '',
         status: task.status,
         dueDate: task.due_date || '',
+        priority: task.priority,
+        tags: task.tags || [],
       });
     } else if (!open) {
       // T066: Reset form on modal close
@@ -87,6 +91,8 @@ export function TaskFormModal({ open, onClose, task, onSuccess }: TaskFormModalP
         description: '',
         status: 'pending',
         dueDate: '',
+        priority: 'medium',
+        tags: [],
       });
     }
   }, [task, open, reset]);
@@ -103,7 +109,14 @@ export function TaskFormModal({ open, onClose, task, onSuccess }: TaskFormModalP
     try {
       if (isEditMode && task) {
         // T061: Update existing task - only send changed fields
-        const updateData: { title?: string; description?: string; status?: 'pending' | 'completed'; due_date?: string | null } = {};
+        const updateData: {
+          title?: string;
+          description?: string;
+          status?: 'pending' | 'completed';
+          due_date?: string | null;
+          priority?: 'low' | 'medium' | 'high';
+          tags?: string[];
+        } = {};
 
         // Only include title if changed
         if (data.title !== task.title) {
@@ -130,6 +143,19 @@ export function TaskFormModal({ open, onClose, task, onSuccess }: TaskFormModalP
           updateData.due_date = newDueDate;
         }
 
+        // Only include priority if changed
+        const formPriority = (data as TaskEditFormData).priority;
+        if (formPriority && formPriority !== task.priority) {
+          updateData.priority = formPriority;
+        }
+
+        // Only include tags if changed
+        const formTags = (data as TaskEditFormData).tags || [];
+        const oldTags = task.tags || [];
+        if (JSON.stringify(formTags) !== JSON.stringify(oldTags)) {
+          updateData.tags = formTags;
+        }
+
         // Only make API call if something changed
         if (Object.keys(updateData).length === 0) {
           toast.info('No changes to save');
@@ -149,6 +175,9 @@ export function TaskFormModal({ open, onClose, task, onSuccess }: TaskFormModalP
           title: data.title,
           description: data.description || undefined,
           due_date: data.dueDate || undefined,
+          priority: data.priority,
+          tags: data.tags,
+          is_recurring: data.isRecurring,
         }).unwrap();
         // T063: Success toast for create
         toast.success('Task created!');
@@ -238,6 +267,62 @@ export function TaskFormModal({ open, onClose, task, onSuccess }: TaskFormModalP
               <p className="text-sm text-destructive">{errors.dueDate.message}</p>
             )}
           </div>
+
+          {/* Priority selection */}
+          <div className="space-y-2">
+            <Label htmlFor="priority">Priority</Label>
+            <div className="flex space-x-2">
+              {(['low', 'medium', 'high'] as const).map((priority) => (
+                <button
+                  key={priority}
+                  type="button"
+                  className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
+                    watch('priority') === priority
+                      ? priority === 'low'
+                        ? 'bg-green-500 text-white'
+                        : priority === 'medium'
+                        ? 'bg-amber-500 text-white'
+                        : 'bg-red-500 text-white'
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  }`}
+                  onClick={() => setValue('priority', priority)}
+                >
+                  {priority.charAt(0).toUpperCase() + priority.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Tags input */}
+          <div className="space-y-2">
+            <Label htmlFor="tags">Tags (comma separated)</Label>
+            <Input
+              id="tags"
+              placeholder="work, personal, urgent..."
+              value={watch('tags')?.join(', ') || ''}
+              onChange={(e) => {
+                const tags = e.target.value
+                  .split(',')
+                  .map(tag => tag.trim())
+                  .filter(tag => tag.length > 0);
+                setValue('tags', tags);
+              }}
+            />
+          </div>
+
+          {/* Recurring task option (create mode only) */}
+          {!isEditMode && (
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="isRecurring"
+                checked={!!watch('isRecurring')}
+                onCheckedChange={(checked) => setValue('isRecurring', checked as boolean)}
+              />
+              <Label htmlFor="isRecurring" className="cursor-pointer">
+                Recurring task
+              </Label>
+            </div>
+          )}
 
           {/* T057: Status Checkbox (edit mode only) */}
           {isEditMode && (

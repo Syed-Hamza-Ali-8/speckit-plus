@@ -12,6 +12,7 @@ import { LandingPage } from '@/pages/LandingPage';
 import { ProfilePage } from '@/pages/ProfilePage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { ChatPage } from '@/pages/ChatPage';
+import { RecurringTaskPatternsPage } from '@/pages/RecurringTaskPatternsPage';
 import { useAuth } from '@/hooks/useAuth';
 
 function App() {
@@ -83,6 +84,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <ChatPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path={ROUTES.RECURRING_PATTERNS}
+            element={
+              <ProtectedRoute>
+                <RecurringTaskPatternsPage />
               </ProtectedRoute>
             }
           />

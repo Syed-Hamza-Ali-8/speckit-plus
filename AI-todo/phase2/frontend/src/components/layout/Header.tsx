@@ -278,6 +278,22 @@ export function Header(_props: HeaderProps) {
                             <Settings className="h-4 w-4 text-muted-foreground" />
                             Settings
                           </motion.button>
+                          <motion.button
+                            whileHover={{ x: 4 }}
+                            onClick={() => {
+                              setIsProfileOpen(false);
+                              navigate(ROUTES.RECURRING_PATTERNS);
+                            }}
+                            className={cn(
+                              'flex items-center gap-3 w-full px-4 py-2.5',
+                              'text-sm text-foreground',
+                              'hover:bg-purple-500/10',
+                              'transition-colors duration-150'
+                            )}
+                          >
+                            <CheckSquare className="h-4 w-4 text-muted-foreground" />
+                            Recurring Patterns
+                          </motion.button>
                         </div>
 
                         {/* Logout */}

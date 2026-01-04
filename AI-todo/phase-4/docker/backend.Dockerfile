@@ -41,6 +41,9 @@ ENV PYTHONPATH=/home/appuser/.local/lib/python3.13/site-packages:$PYTHONPATH
 # Copy application code from phase2/backend
 COPY --chown=appuser:appgroup phase2/backend/ .
 
+# Verify files were copied correctly (debug step)
+RUN ls -la app/api/routes/
+
 # Switch to non-root user
 USER appuser
 

@@ -11,7 +11,7 @@ from slowapi.errors import RateLimitExceeded
 
 from app.api.routes import auth, notifications, tasks
 from app.chat import chat_router, websocket_router
-from app.core.database import close_db, get_async_engine
+from app.core.database import close_db, get_async_engine, init_db
 from app.middleware.rate_limit import limiter
 
 
@@ -20,11 +20,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan context manager.
 
     Handles startup and shutdown events:
-    - Startup: Initialize database engine
+    - Startup: Initialize database engine and create tables
     - Shutdown: Close database connections
     """
-    # Startup: ensure engine is created
+    # Startup: ensure engine is created and tables are initialized
     get_async_engine()
+    await init_db()
     yield
     # Shutdown: close database connections
     await close_db()

@@ -11,6 +11,8 @@ export interface TaskListProps {
   onEdit: (task: Task) => void;
   onDelete: (task: Task) => void;
   onToggleStatus: (task: Task) => void;
+  onSetPriority: (task: Task, priority: 'low' | 'medium' | 'high') => void;
+  onSetTags: (task: Task, tags: string[]) => void;
   onCreateClick: () => void;
   onClearFilters: () => void;
   hasFilters: boolean;
@@ -39,6 +41,8 @@ export function TaskList({
   onEdit,
   onDelete,
   onToggleStatus,
+  onSetPriority,
+  onSetTags,
   onCreateClick,
   onClearFilters,
   hasFilters,
@@ -112,6 +116,8 @@ export function TaskList({
                 onEdit={() => onEdit(task)}
                 onDelete={() => onDelete(task)}
                 onToggleStatus={() => onToggleStatus(task)}
+                onSetPriority={(priority) => onSetPriority(task, priority)}
+                onSetTags={(tags) => onSetTags(task, tags)}
               />
             ))}
           </AnimatePresence>
@@ -133,6 +139,8 @@ export function TaskList({
                 onEdit={() => onEdit(task)}
                 onDelete={() => onDelete(task)}
                 onToggleStatus={() => onToggleStatus(task)}
+                onSetPriority={(priority) => onSetPriority(task, priority)}
+                onSetTags={(tags) => onSetTags(task, tags)}
               />
             ))}
           </AnimatePresence>
@@ -151,6 +159,8 @@ export function TaskList({
           onEdit={onEdit}
           onDelete={onDelete}
           onToggleStatus={onToggleStatus}
+          onSetPriority={onSetPriority}
+          onSetTags={onSetTags}
         />
       </motion.div>
     </>

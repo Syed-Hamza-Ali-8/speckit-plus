@@ -7,6 +7,7 @@ import type { TaskStatus } from '@/types/task';
  */
 export interface TaskFilters {
   status: 'all' | TaskStatus;
+  priority: 'all' | 'low' | 'medium' | 'high';
   search: string;
 }
 
@@ -16,6 +17,7 @@ export interface TaskFilters {
 export interface UseTaskFiltersReturn {
   filters: TaskFilters;
   setStatus: (status: 'all' | TaskStatus) => void;
+  setPriority: (priority: 'all' | 'low' | 'medium' | 'high') => void;
   setSearch: (search: string) => void;
   clearFilters: () => void;
   hasActiveFilters: boolean;
@@ -37,6 +39,9 @@ export function useTaskFilters(): UseTaskFiltersReturn {
 
   // T037: Status filter state from URL
   const status = (searchParams.get('status') as 'all' | TaskStatus) || 'all';
+
+  // Priority filter state from URL
+  const priority = (searchParams.get('priority') as 'all' | 'low' | 'medium' | 'high') || 'all';
 
   // T038: Search filter state from URL
   const search = searchParams.get('search') || '';
@@ -66,6 +71,14 @@ export function useTaskFilters(): UseTaskFiltersReturn {
         }
       }
 
+      if (updates.priority !== undefined) {
+        if (updates.priority === 'all') {
+          newParams.delete('priority');
+        } else {
+          newParams.set('priority', updates.priority);
+        }
+      }
+
       if (updates.search !== undefined) {
         if (updates.search === '') {
           newParams.delete('search');
@@ -87,6 +100,14 @@ export function useTaskFilters(): UseTaskFiltersReturn {
     [updateParams]
   );
 
+  // Set priority filter
+  const setPriority = useCallback(
+    (newPriority: 'all' | 'low' | 'medium' | 'high') => {
+      updateParams({ priority: newPriority });
+    },
+    [updateParams]
+  );
+
   // T038: Set search filter
   const setSearch = useCallback(
     (newSearch: string) => {
@@ -103,22 +124,24 @@ export function useTaskFilters(): UseTaskFiltersReturn {
 
   // Check if any filters are active
   const hasActiveFilters = useMemo(
-    () => status !== 'all' || search !== '',
-    [status, search]
+    () => status !== 'all' || priority !== 'all' || search !== '',
+    [status, priority, search]
   );
 
   // Combined filters object
   const filters = useMemo(
     () => ({
       status,
+      priority,
       search,
     }),
-    [status, search]
+    [status, priority, search]
   );
 
   return {
     filters,
     setStatus,
+    setPriority,
     setSearch,
     clearFilters,
     hasActiveFilters,

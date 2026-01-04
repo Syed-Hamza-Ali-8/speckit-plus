@@ -23,11 +23,16 @@ from app.mcp.server import set_context
 TODO_AGENT_SYSTEM_PROMPT = """You are a helpful todo task management assistant. Your role is to help users manage their tasks through natural language conversation.
 
 You have access to the following tools:
-- add_task_tool: Create a new task with title, optional description, and due date
-- list_tasks_tool: View all tasks, optionally filtered by status (all, pending, completed)
+- add_task_tool: Create a new task with title, optional description, due date, priority, tags, and recurring options
+- list_tasks_tool: View all tasks, optionally filtered by status (all, pending, completed), priority, and tags
 - complete_task_tool: Mark a task as completed
 - delete_task_tool: Remove a task from the list
-- update_task_tool: Modify a task's title, description, or due date
+- update_task_tool: Modify a task's title, description, due date, priority, or tags
+- set_task_priority_tool: Set priority level (low, medium, high) for tasks
+- add_task_tags_tool: Add tags to organize tasks
+- remove_task_tags_tool: Remove tags from tasks
+- search_tasks_tool: Find tasks by keywords and filters
+- create_recurring_task_pattern_tool: Create tasks that repeat on a schedule (daily, weekly, monthly, yearly)
 
 Guidelines:
 1. Be helpful and conversational
@@ -36,14 +41,18 @@ Guidelines:
 4. For destructive actions (delete), confirm the task details before proceeding
 5. If a user's request is ambiguous, ask clarifying questions
 6. Always confirm actions after they're completed
+7. For recurring tasks, ask for the pattern (daily, weekly, monthly, etc.)
+8. For priority levels, offer low, medium, or high options
+9. For tags, suggest relevant tags based on the task content
 
 Examples of user requests you should handle:
 - "Add a task to buy groceries" -> Use add_task_tool with title="Buy groceries"
-- "Show my tasks" -> Use list_tasks_tool with status="all"
-- "What's pending?" -> Use list_tasks_tool with status="pending"
-- "Mark task X as done" -> Use complete_task_tool
-- "Delete the groceries task" -> First list tasks to find it, then delete_task_tool
-- "Change task X to Y" -> Use update_task_tool
+- "Create a recurring task to water plants every Monday" -> Use create_recurring_task_pattern_tool
+- "Show my high priority tasks" -> Use list_tasks_tool with priority filter
+- "Find tasks with 'meeting' in the title" -> Use search_tasks_tool
+- "Add 'work' tag to this task" -> Use add_task_tags_tool
+- "Set this task to high priority" -> Use set_task_priority_tool
+- "Remove 'personal' tag from this task" -> Use remove_task_tags_tool
 """
 
 
@@ -118,6 +127,11 @@ class GeminiTodoAgent:
             complete_task,
             delete_task,
             update_task,
+            set_task_priority,
+            add_task_tags,
+            remove_task_tags,
+            search_tasks,
+            create_recurring_task_pattern,
         )
 
         # Define function tools - must be defined inside the method
@@ -170,16 +184,113 @@ class GeminiTodoAgent:
             title: str | None = None,
             description: str | None = None,
             due_date: str | None = None,
+            priority: str | None = None,
+            tags: list[str] | None = None,
         ) -> dict:
-            """Update a task's title, description, or due date.
+            """Update a task's title, description, due date, priority, or tags.
 
             Args:
                 task_id: The UUID of the task to update.
                 title: New title for the task (optional).
                 description: New description for the task (optional).
                 due_date: New due date in YYYY-MM-DD format (optional).
+                priority: New priority level - "low", "medium", or "high" (optional).
+                tags: New list of tags for the task (optional).
             """
-            return await update_task(task_id, title, description, due_date)
+            return await update_task(task_id, title, description, due_date, priority, tags)
+
+        @function_tool
+        async def set_task_priority_tool(
+            task_id: str,
+            priority: str,
+        ) -> dict:
+            """Set the priority of a task.
+
+            Args:
+                task_id: The UUID of the task to update.
+                priority: Priority level - "low", "medium", or "high".
+            """
+            return await set_task_priority(task_id, priority)
+
+        @function_tool
+        async def add_task_tags_tool(
+            task_id: str,
+            tags: list[str],
+        ) -> dict:
+            """Add tags to a task.
+
+            Args:
+                task_id: The UUID of the task to update.
+                tags: List of tags to add to the task.
+            """
+            return await add_task_tags(task_id, tags)
+
+        @function_tool
+        async def remove_task_tags_tool(
+            task_id: str,
+            tags: list[str],
+        ) -> dict:
+            """Remove tags from a task.
+
+            Args:
+                task_id: The UUID of the task to update.
+                tags: List of tags to remove from the task.
+            """
+            return await remove_task_tags(task_id, tags)
+
+        @function_tool
+        async def search_tasks_tool(
+            query: str,
+            status: str | None = None,
+            priority: str | None = None,
+            tags: list[str] | None = None,
+            due_before: str | None = None,
+            due_after: str | None = None,
+            sort_by: str = "created_at",
+            order: str = "desc",
+            page: int = 1,
+            per_page: int = 20,
+        ) -> dict:
+            """Search tasks with various filters.
+
+            Args:
+                query: Search query string to match in title or description.
+                status: Filter by status - "all", "pending", or "completed" (optional).
+                priority: Filter by priority - "low", "medium", or "high" (optional).
+                tags: Filter by tags - list of tags to match (optional).
+                due_before: Filter for tasks due before this date (YYYY-MM-DD format, optional).
+                due_after: Filter for tasks due after this date (YYYY-MM-DD format, optional).
+                sort_by: Field to sort by - "created_at", "title", "due_date", or "priority" (default: "created_at").
+                order: Sort order - "asc" or "desc" (default: "desc").
+                page: Page number for pagination (default: 1).
+                per_page: Number of items per page (default: 20).
+            """
+            return await search_tasks(query, status, priority, tags, due_before, due_after, sort_by, order, page, per_page)
+
+        @function_tool
+        async def create_recurring_task_pattern_tool(
+            base_task_title: str,
+            base_task_description: str | None = None,
+            pattern_type: str = "daily",
+            interval: int = 1,
+            start_date: str | None = None,
+            end_date: str | None = None,
+            weekdays: list[int] | None = None,
+            days_of_month: list[int] | None = None,
+        ) -> dict:
+            """Create a recurring task pattern.
+
+            Args:
+                base_task_title: Title for the base recurring task.
+                base_task_description: Description for the base recurring task (optional).
+                pattern_type: Type of recurrence - "daily", "weekly", "monthly", "yearly", or "custom" (default: "daily").
+                interval: Interval between occurrences (default: 1).
+                start_date: Start date for the recurring pattern in YYYY-MM-DD format (default: today).
+                end_date: End date for the recurring pattern in YYYY-MM-DD format (optional).
+                weekdays: List of weekdays for weekly patterns (0=Sunday, 6=Saturday, optional).
+                days_of_month: List of days of month for monthly patterns (optional).
+            """
+            return await create_recurring_task_pattern(base_task_title, base_task_description, pattern_type, interval, start_date, end_date, weekdays, days_of_month)
 
         try:
             # Create agent with model via OpenAIChatCompletionsModel
@@ -193,6 +304,11 @@ class GeminiTodoAgent:
                     complete_task_tool,
                     delete_task_tool,
                     update_task_tool,
+                    set_task_priority_tool,
+                    add_task_tags_tool,
+                    remove_task_tags_tool,
+                    search_tasks_tool,
+                    create_recurring_task_pattern_tool,
                 ],
             )
 

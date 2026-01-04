@@ -10,13 +10,14 @@ import { TaskFilters } from '@/components/tasks/TaskFilters';
 import { TaskFormModal } from '@/components/tasks/TaskFormModal';
 import { DeleteTaskDialog } from '@/components/tasks/DeleteTaskDialog';
 import { useTaskFilters } from '@/hooks/useTaskFilters';
-import { useGetTasksQuery, useUpdateTaskMutation } from '@/services/taskApi';
+import { useGetTasksQuery, useUpdateTaskMutation, useSetTaskPriorityMutation, useAddTaskTagsMutation, useRemoveTaskTagsMutation } from '@/services/taskApi';
 import type { Task, TaskStatus } from '@/types/task';
 
 export function TasksPage() {
   const {
     filters,
     setStatus,
+    setPriority,
     setSearch,
     clearFilters,
     hasActiveFilters,
@@ -24,15 +25,21 @@ export function TasksPage() {
   } = useTaskFilters();
 
   const queryParams = useMemo(() => {
-    const params: { status?: TaskStatus } = {};
+    const params: { status?: TaskStatus; priority?: 'low' | 'medium' | 'high' } = {};
     if (filters.status !== 'all') {
       params.status = filters.status;
     }
+    if (filters.priority !== 'all') {
+      params.priority = filters.priority;
+    }
     return params;
-  }, [filters.status]);
+  }, [filters.status, filters.priority]);
 
   const { data: tasksData, isLoading, isFetching } = useGetTasksQuery(queryParams);
   const [updateTask] = useUpdateTaskMutation();
+  const [setTaskPriority] = useSetTaskPriorityMutation();
+  const [addTaskTags] = useAddTaskTagsMutation();
+  const [removeTaskTags] = useRemoveTaskTagsMutation();
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editModalTask, setEditModalTask] = useState<Task | null>(null);
@@ -41,16 +48,26 @@ export function TasksPage() {
   const isDeleteDialogOpen = deleteDialogTask !== null;
 
   const filteredTasks = useMemo(() => {
-    const tasks = tasksData?.items ?? [];
-    if (!debouncedSearch) return tasks;
+    let tasks = tasksData?.items ?? [];
 
-    const searchLower = debouncedSearch.toLowerCase();
-    return tasks.filter(
-      (task) =>
-        task.title.toLowerCase().includes(searchLower) ||
-        (task.description && task.description.toLowerCase().includes(searchLower))
-    );
-  }, [tasksData?.items, debouncedSearch]);
+    // Apply priority filter
+    if (filters.priority !== 'all') {
+      tasks = tasks.filter(task => task.priority === filters.priority);
+    }
+
+    // Apply search filter
+    if (debouncedSearch) {
+      const searchLower = debouncedSearch.toLowerCase();
+      tasks = tasks.filter(
+        (task) =>
+          task.title.toLowerCase().includes(searchLower) ||
+          (task.description && task.description.toLowerCase().includes(searchLower)) ||
+          (task.tags && task.tags.some(tag => tag.toLowerCase().includes(searchLower)))
+      );
+    }
+
+    return tasks;
+  }, [tasksData?.items, filters.priority, debouncedSearch]);
 
   const resultCount = useMemo(
     () => ({
@@ -85,6 +102,30 @@ export function TasksPage() {
     [updateTask]
   );
 
+  const handleSetPriority = useCallback(
+    async (task: Task, priority: 'low' | 'medium' | 'high') => {
+      try {
+        await setTaskPriority({
+          id: task.id,
+          priority: priority,
+        }).unwrap();
+        toast.success(`Task priority set to ${priority}`);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to update task priority';
+        toast.error(errorMessage);
+      }
+    },
+    [setTaskPriority]
+  );
+
+  const handleSetTags = useCallback(
+    async (task: Task, tags: string[]) => {
+      // For now, we'll just open the edit modal since the task form already handles tags
+      setEditModalTask(task);
+    },
+    []
+  );
+
   const handleCloseCreateModal = useCallback(() => {
     setIsCreateModalOpen(false);
   }, []);
@@ -103,11 +144,11 @@ export function TasksPage() {
 
   // Calculate stats
   const stats = useMemo(() => {
-    const tasks = tasksData?.items ?? [];
+    const tasks = filteredTasks; // Use filtered tasks instead of all tasks
     const completed = tasks.filter((t) => t.status === 'completed').length;
     const pending = tasks.filter((t) => t.status === 'pending').length;
     return { total: tasks.length, completed, pending };
-  }, [tasksData?.items]);
+  }, [filteredTasks]);
 
   return (
     <div className="relative min-h-screen">
@@ -207,8 +248,10 @@ export function TasksPage() {
           >
             <TaskFilters
               status={filters.status}
+              priority={filters.priority}
               search={filters.search}
               onStatusChange={setStatus}
+              onPriorityChange={setPriority}
               onSearchChange={setSearch}
               onClear={clearFilters}
               resultCount={resultCount}
@@ -228,6 +271,8 @@ export function TasksPage() {
               onEdit={handleEdit}
               onDelete={handleDelete}
               onToggleStatus={handleToggleStatus}
+              onSetPriority={handleSetPriority}
+              onSetTags={handleSetTags}
               onCreateClick={() => setIsCreateModalOpen(true)}
               onClearFilters={clearFilters}
               hasFilters={hasActiveFilters}

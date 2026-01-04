@@ -26,7 +26,7 @@ frontend:
   tag: latest
   replicas: 1
   port: 3000
-  nodePort: 30000
+  nodePort: 30001
   resources:
     requests:
       memory: 128Mi
@@ -43,9 +43,10 @@ config:
 
 # Secrets configuration (set via --set flags, never commit actual values)
 secrets:
-  databaseUrl: ""
+  databaseUrl: "postgresql://postgres:postgres@postgresql:5432/todo_db?sslmode=disable"
   openaiApiKey: ""
   betterAuthSecret: ""
+  jwtSecretKey: ""
 
 # Image pull policy (Never for local Minikube images)
 imagePullPolicy: Never

@@ -19,6 +19,11 @@ from app.schemas.task import (
     TaskCreate,
     TaskRead,
     TaskUpdate,
+    SetTaskPriorityRequest,
+    AddTaskTagsRequest,
+    RemoveTaskTagsRequest,
+    SearchTasksRequest,
+    CreateRecurringTaskPatternRequest,
 )
 from app.services import task_service
 from app.services import notification_service
@@ -238,3 +243,205 @@ async def delete_task(
         user_id=current_user.id,
         task_title=task_title,
     )
+
+
+@router.patch("/{task_id}/priority", response_model=TaskRead)
+@limiter.limit(UPDATE_TASK_RATE_LIMIT)
+async def set_task_priority(
+    request: Request,
+    task_id: UUID,
+    data: SetTaskPriorityRequest,
+    db: DbSession,
+    current_user: CurrentUser,
+) -> TaskRead:
+    """Set priority for a specific task.
+
+    Updates the priority level of a task.
+    Returns 404 if task doesn't exist or is not owned by current user.
+    Rate limited to 60 requests per hour per user.
+    """
+    task = await task_service.get_task(db, task_id, current_user.id)
+    if task is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Task not found",
+        )
+
+    updated_task = await task_service.set_task_priority(
+        db,
+        task_id,
+        current_user.id,
+        data.priority
+    )
+
+    if updated_task is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Task not found",
+        )
+
+    return TaskRead.model_validate(updated_task)
+
+
+@router.patch("/{task_id}/tags", response_model=TaskRead)
+@limiter.limit(UPDATE_TASK_RATE_LIMIT)
+async def add_task_tags(
+    request: Request,
+    task_id: UUID,
+    data: AddTaskTagsRequest,
+    db: DbSession,
+    current_user: CurrentUser,
+) -> TaskRead:
+    """Add tags to a specific task.
+
+    Adds new tags to a task's existing tags.
+    Returns 404 if task doesn't exist or is not owned by current user.
+    Rate limited to 60 requests per hour per user.
+    """
+    task = await task_service.get_task(db, task_id, current_user.id)
+    if task is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Task not found",
+        )
+
+    updated_task = await task_service.add_task_tags(
+        db,
+        task_id,
+        current_user.id,
+        data.tags
+    )
+
+    if updated_task is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Task not found",
+        )
+
+    return TaskRead.model_validate(updated_task)
+
+
+@router.delete("/{task_id}/tags", response_model=TaskRead)
+@limiter.limit(UPDATE_TASK_RATE_LIMIT)
+async def remove_task_tags(
+    request: Request,
+    task_id: UUID,
+    data: RemoveTaskTagsRequest,
+    db: DbSession,
+    current_user: CurrentUser,
+) -> TaskRead:
+    """Remove tags from a specific task.
+
+    Removes specified tags from a task's existing tags.
+    Returns 404 if task doesn't exist or is not owned by current user.
+    Rate limited to 60 requests per hour per user.
+    """
+    task = await task_service.get_task(db, task_id, current_user.id)
+    if task is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Task not found",
+        )
+
+    updated_task = await task_service.remove_task_tags(
+        db,
+        task_id,
+        current_user.id,
+        data.tags
+    )
+
+    if updated_task is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Task not found",
+        )
+
+    return TaskRead.model_validate(updated_task)
+
+
+@router.get("/search", response_model=PaginatedTaskResponse)
+@limiter.limit(LIST_TASKS_RATE_LIMIT)
+async def search_tasks(
+    request: Request,
+    db: DbSession,
+    current_user: CurrentUser,
+    query: str = Query(..., min_length=1, description="Search query string"),
+    status_filter: TaskStatus | None = Query(default=None, alias="status"),
+    priority: str | None = Query(default=None, description="Filter by priority level"),
+    tags: list[str] | None = Query(default=None, description="Filter by tags"),
+    due_before: date | None = Query(default=None, description="Filter by due date before"),
+    due_after: date | None = Query(default=None, description="Filter by due date after"),
+    sort_by: str = Query(default="created_at", description="Field to sort by"),
+    order: str = Query(default="desc", description="Sort order (asc or desc)"),
+    page: int = Query(default=1, ge=1, description="Page number"),
+    per_page: int = Query(default=20, ge=1, le=100, description="Number of items per page"),
+) -> PaginatedTaskResponse:
+    """Search tasks by query string and filters.
+
+    Returns tasks matching the search query and filters.
+    Rate limited to 100 requests per hour per user.
+    """
+    # Calculate offset based on page and per_page
+    offset = (page - 1) * per_page
+
+    # Get paginated tasks from service with search and filters
+    tasks, total = await task_service.search_tasks(
+        db,
+        current_user.id,
+        query=query,
+        status=status_filter,
+        priority=priority,
+        tags=tags,
+        due_before=due_before,
+        due_after=due_after,
+        sort_by=sort_by,
+        order=order,
+        page=page,
+        per_page=per_page,
+    )
+
+    return PaginatedTaskResponse(
+        items=[TaskRead.model_validate(task) for task in tasks],
+        total=total,
+        limit=per_page,
+        offset=offset,
+    )
+
+
+@router.post("/recurring-patterns", response_model=dict)
+@limiter.limit(CREATE_TASK_RATE_LIMIT)
+async def create_recurring_task_pattern(
+    request: Request,
+    data: CreateRecurringTaskPatternRequest,
+    db: DbSession,
+    current_user: CurrentUser,
+) -> dict:
+    """Create a recurring task pattern.
+
+    Creates a recurring task pattern that can generate tasks based on the specified pattern.
+    Rate limited to 30 requests per hour per user.
+    """
+    pattern = await task_service.create_recurring_task_pattern(
+        db,
+        current_user.id,
+        data.base_task_title,
+        data.base_task_description,
+        data.pattern_type,
+        data.interval,
+        data.start_date,
+        data.end_date,
+        data.weekdays,
+        data.days_of_month
+    )
+
+    return {
+        "id": pattern.id,
+        "base_task_title": pattern.base_task_title,
+        "pattern_type": pattern.pattern_type,
+        "interval": pattern.interval,
+        "start_date": pattern.start_date,
+        "end_date": pattern.end_date,
+        "weekdays": pattern.weekdays,
+        "days_of_month": pattern.days_of_month,
+        "created_at": pattern.created_at,
+    }

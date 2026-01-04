@@ -6,6 +6,7 @@ export const ROUTES = {
   LOGIN: '/login',
   REGISTER: '/register',
   TASKS: '/tasks',
+  RECURRING_PATTERNS: '/recurring-patterns',
   PROFILE: '/profile',
   SETTINGS: '/settings',
   CHAT: '/chat',

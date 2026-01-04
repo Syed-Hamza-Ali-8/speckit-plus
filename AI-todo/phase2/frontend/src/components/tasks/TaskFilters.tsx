@@ -10,12 +10,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import type { TaskStatus } from '@/types/task';
+import type { TaskStatus, PriorityLevel } from '@/types/task';
 
 export interface TaskFiltersProps {
   status: 'all' | TaskStatus;
+  priority?: 'all' | PriorityLevel;
   search: string;
   onStatusChange: (status: 'all' | TaskStatus) => void;
+  onPriorityChange: (priority: 'all' | PriorityLevel) => void;
   onSearchChange: (search: string) => void;
   onClear: () => void;
   resultCount: { showing: number; total: number };
@@ -24,8 +26,10 @@ export interface TaskFiltersProps {
 
 export function TaskFilters({
   status,
+  priority = 'all',
   search,
   onStatusChange,
+  onPriorityChange,
   onSearchChange,
   onClear,
   resultCount,
@@ -85,6 +89,49 @@ export function TaskFilters({
               </SelectItem>
               <SelectItem value="completed" className="rounded-lg hover:bg-purple-500/10 text-gray-900 dark:text-gray-100">
                 Completed
+              </SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* Priority Select dropdown */}
+          <Select
+            value={priority}
+            onValueChange={(value) => onPriorityChange(value as 'all' | PriorityLevel)}
+          >
+            <SelectTrigger
+              className={cn(
+                'w-[140px] rounded-xl',
+                'bg-white/50 dark:bg-gray-800/50',
+                'border-white/30 dark:border-white/10',
+                'hover:border-purple-300/50 dark:hover:border-purple-500/30',
+                'focus:ring-2 focus:ring-purple-500/20',
+                'transition-all duration-200',
+                'text-gray-900 dark:text-gray-100'
+              )}
+            >
+              <ListFilter className="h-4 w-4 mr-2 text-gray-500 dark:text-gray-400" />
+              <SelectValue placeholder="Priority" />
+            </SelectTrigger>
+            <SelectContent
+              className={cn(
+                'bg-white/90 dark:bg-gray-900/90',
+                'backdrop-blur-xl',
+                'border border-white/30 dark:border-white/10',
+                'shadow-xl rounded-xl',
+                'text-gray-900 dark:text-gray-100'
+              )}
+            >
+              <SelectItem value="all" className="rounded-lg hover:bg-purple-500/10 text-gray-900 dark:text-gray-100">
+                All Priorities
+              </SelectItem>
+              <SelectItem value="low" className="rounded-lg hover:bg-green-500/10 text-gray-900 dark:text-gray-100">
+                Low
+              </SelectItem>
+              <SelectItem value="medium" className="rounded-lg hover:bg-amber-500/10 text-gray-900 dark:text-gray-100">
+                Medium
+              </SelectItem>
+              <SelectItem value="high" className="rounded-lg hover:bg-red-500/10 text-gray-900 dark:text-gray-100">
+                High
               </SelectItem>
             </SelectContent>
           </Select>

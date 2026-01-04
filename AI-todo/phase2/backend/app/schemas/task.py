@@ -2,10 +2,11 @@
 
 from datetime import date, datetime
 from uuid import UUID
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
-from app.models.task import TaskStatus
+from app.models.task import TaskStatus, PriorityLevel
 
 
 class TaskCreate(BaseModel):
@@ -28,6 +29,23 @@ class TaskCreate(BaseModel):
         default=None,
         description="Optional due date for the task",
         json_schema_extra={"example": "2025-12-31"},
+    )
+    # Phase V: Advanced features
+    priority: PriorityLevel | None = Field(
+        default=PriorityLevel.MEDIUM,
+        description="Priority level for the task",
+    )
+    tags: List[str] = Field(
+        default_factory=list,
+        description="List of tags for the task",
+    )
+    is_recurring: bool = Field(
+        default=False,
+        description="Whether this task is part of a recurring pattern",
+    )
+    recurring_pattern_id: UUID | None = Field(
+        default=None,
+        description="ID of the recurring pattern this task belongs to",
     )
 
 
@@ -53,6 +71,15 @@ class TaskUpdate(BaseModel):
         default=None,
         description="Updated due date",
     )
+    # Phase V: Advanced features
+    priority: PriorityLevel | None = Field(
+        default=None,
+        description="Updated priority level",
+    )
+    tags: List[str] | None = Field(
+        default=None,
+        description="Updated list of tags",
+    )
 
 
 class TaskResponse(BaseModel):
@@ -64,6 +91,14 @@ class TaskResponse(BaseModel):
     description: str | None = Field(..., description="Task description")
     status: TaskStatus = Field(..., description="Task status")
     due_date: date | None = Field(..., description="Due date")
+    # Phase V: Advanced features
+    priority: PriorityLevel = Field(..., description="Priority level")
+    tags: List[str] = Field(..., description="List of tags")
+    is_recurring: bool = Field(..., description="Whether this task is part of a recurring pattern")
+    recurring_pattern_id: UUID | None = Field(None, description="ID of the recurring pattern this task belongs to")
+    is_reminder_sent: bool = Field(..., description="Whether a reminder has been sent")
+    parent_task_id: UUID | None = Field(None, description="ID of the parent task (for recurring tasks)")
+    next_occurrence_id: UUID | None = Field(None, description="ID of the next occurrence (for recurring tasks)")
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
 
@@ -82,6 +117,14 @@ class TaskRead(BaseModel):
     description: str | None = Field(..., description="Task description")
     status: TaskStatus = Field(..., description="Task status")
     due_date: date | None = Field(None, description="Due date")
+    # Phase V: Advanced features
+    priority: PriorityLevel = Field(..., description="Priority level")
+    tags: List[str] = Field(..., description="List of tags")
+    is_recurring: bool = Field(..., description="Whether this task is part of a recurring pattern")
+    recurring_pattern_id: UUID | None = Field(None, description="ID of the recurring pattern this task belongs to")
+    is_reminder_sent: bool = Field(..., description="Whether a reminder has been sent")
+    parent_task_id: UUID | None = Field(None, description="ID of the parent task (for recurring tasks)")
+    next_occurrence_id: UUID | None = Field(None, description="ID of the next occurrence (for recurring tasks)")
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
 
@@ -95,3 +138,50 @@ class PaginatedTaskResponse(BaseModel):
     total: int = Field(..., description="Total count of matching tasks")
     limit: int = Field(..., description="Page size")
     offset: int = Field(..., description="Current offset")
+
+
+# Phase V: Advanced features schemas
+class SetTaskPriorityRequest(BaseModel):
+    """Schema for setting task priority request."""
+
+    priority: PriorityLevel = Field(..., description="New priority level")
+
+
+class AddTaskTagsRequest(BaseModel):
+    """Schema for adding task tags request."""
+
+    tags: List[str] = Field(..., description="List of tags to add")
+
+
+class RemoveTaskTagsRequest(BaseModel):
+    """Schema for removing task tags request."""
+
+    tags: List[str] = Field(..., description="List of tags to remove")
+
+
+class SearchTasksRequest(BaseModel):
+    """Schema for searching tasks request."""
+
+    query: str = Field(..., min_length=1, description="Search query string")
+    status: str | None = Field(default=None, description="Filter by status (all, pending, completed)")
+    priority: PriorityLevel | None = Field(default=None, description="Filter by priority level")
+    tags: List[str] = Field(default_factory=list, description="Filter by tags")
+    due_before: date | None = Field(default=None, description="Filter by due date before")
+    due_after: date | None = Field(default=None, description="Filter by due date after")
+    sort_by: str = Field(default="created_at", description="Field to sort by")
+    order: str = Field(default="desc", description="Sort order (asc or desc)")
+    page: int = Field(default=1, ge=1, description="Page number")
+    per_page: int = Field(default=20, ge=1, le=100, description="Number of items per page")
+
+
+class CreateRecurringTaskPatternRequest(BaseModel):
+    """Schema for creating recurring task pattern request."""
+
+    base_task_title: str = Field(..., min_length=1, max_length=200, description="Base title for recurring tasks")
+    base_task_description: str | None = Field(default=None, max_length=1000, description="Base description for recurring tasks")
+    pattern_type: str = Field(..., description="Type of recurrence pattern (daily, weekly, monthly, yearly, custom)")
+    interval: int = Field(default=1, ge=1, description="Interval between occurrences")
+    start_date: date = Field(..., description="Start date for the recurring pattern")
+    end_date: date | None = Field(default=None, description="Optional end date for the recurring pattern")
+    weekdays: List[int] | None = Field(default=None, description="List of weekdays for weekly patterns (0=Sunday, 6=Saturday)")
+    days_of_month: List[int] | None = Field(default=None, description="List of days of month for monthly patterns")

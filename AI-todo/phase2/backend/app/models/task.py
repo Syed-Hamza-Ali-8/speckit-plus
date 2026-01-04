@@ -3,10 +3,13 @@
 from datetime import date, datetime, timezone
 from enum import Enum
 from uuid import UUID, uuid4
+from typing import List, Optional
 
 from pydantic import field_validator
+import sqlalchemy as sa
 from sqlalchemy import CheckConstraint, Column, Date, DateTime, Index, func
 from sqlalchemy import Enum as SAEnum
+from sqlalchemy.dialects.postgresql import JSON
 from sqlmodel import Field, SQLModel
 
 
@@ -23,6 +26,22 @@ class TaskStatus(str, Enum):
     # IN_PROGRESS = "in_progress"
     # BLOCKED = "blocked"
     # ARCHIVED = "archived"
+
+
+class PriorityLevel(str, Enum):
+    """Priority levels for tasks."""
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+
+
+class RecurrencePattern(str, Enum):
+    """Types of recurrence patterns."""
+    DAILY = "daily"
+    WEEKLY = "weekly"
+    MONTHLY = "monthly"
+    YEARLY = "yearly"
+    CUSTOM = "custom"
 
 
 class Task(SQLModel, table=True):
@@ -70,6 +89,44 @@ class Task(SQLModel, table=True):
         default=None,
         sa_column=Column(Date, nullable=True),
         description="Optional due date for the task",
+    )
+    # Phase V: Advanced features
+    priority: PriorityLevel = Field(
+        default=PriorityLevel.MEDIUM,
+        sa_column=Column(
+            SAEnum(PriorityLevel, native_enum=False, length=20),
+            nullable=False,
+        ),
+        description="Task priority level",
+    )
+    tags: List[str] = Field(
+        default_factory=list,
+        sa_column=Column(
+            sa.JSON,
+            nullable=False,
+            default=list,
+        ),
+        description="List of tags for the task",
+    )
+    is_recurring: bool = Field(
+        default=False,
+        description="Whether this task is part of a recurring pattern",
+    )
+    recurring_pattern_id: Optional[UUID] = Field(
+        default=None,
+        description="ID of the recurring pattern this task belongs to",
+    )
+    is_reminder_sent: bool = Field(
+        default=False,
+        description="Whether a reminder has been sent for this task",
+    )
+    parent_task_id: Optional[UUID] = Field(
+        default=None,
+        description="ID of the parent task (for recurring tasks)",
+    )
+    next_occurrence_id: Optional[UUID] = Field(
+        default=None,
+        description="ID of the next occurrence (for recurring tasks)",
     )
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),

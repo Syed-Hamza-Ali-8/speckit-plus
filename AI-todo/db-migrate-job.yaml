@@ -1,0 +1,24 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-migrate
+  namespace: todo-app
+spec:
+  template:
+    spec:
+      containers:
+      - name: db-migrate
+        image: todo-backend:updated
+        command: ["python", "/tmp/init_db_script.py"]
+        env:
+        - name: DATABASE_URL
+          value: "postgresql+asyncpg://postgres:postgres@postgresql:5432/todo_db"
+        - name: JWT_SECRET_KEY
+          value: "my-super-secret-jwt-key-for-demo"
+        envFrom:
+        - configMapRef:
+            name: todo-app-config
+        - secretRef:
+            name: todo-app-secrets
+      restartPolicy: Never
+  backoffLimit: 4

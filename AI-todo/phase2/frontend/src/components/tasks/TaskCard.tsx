@@ -11,6 +11,8 @@ export interface TaskCardProps {
   onEdit: () => void;
   onDelete: () => void;
   onToggleStatus: () => void;
+  onSetPriority: (priority: 'low' | 'medium' | 'high') => void;
+  onSetTags: (tags: string[]) => void;
   index?: number;
 }
 
@@ -146,7 +148,7 @@ export function TaskCard({
                 </p>
               )}
 
-              {/* Status badge and date */}
+              {/* Status badge, date, and advanced features */}
               <div className="flex items-center gap-2 mt-3 flex-wrap">
                 <StatusBadge
                   status={isCompleted ? 'completed' : 'pending'}
@@ -171,14 +173,94 @@ export function TaskCard({
                     <span>{taskIsOverdue ? 'Overdue' : formatDueDate(task.due_date)}</span>
                   </div>
                 )}
+                {/* Priority indicator */}
+                {task.priority && (
+                  <div
+                    className={cn(
+                      'px-2 py-0.5 rounded-md text-xs font-medium',
+                      task.priority === 'high'
+                        ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+                        : task.priority === 'medium'
+                        ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'
+                        : 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+                    )}
+                  >
+                    {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+                  </div>
+                )}
+                {/* Recurring indicator */}
+                {task.is_recurring && (
+                  <div className="px-2 py-0.5 rounded-md text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+                    Recurring
+                  </div>
+                )}
                 <span className="text-xs text-gray-600 dark:text-gray-400">
                   {formatDate(task.created_at)}
                 </span>
               </div>
+
+              {/* Tags display */}
+              {task.tags && task.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {task.tags.map((tag, index) => (
+                    <span
+                      key={index}
+                      className="px-2 py-0.5 rounded-md text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                  <button
+                    onClick={onEdit}
+                    className="px-2 py-0.5 rounded-md text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    Edit Tags
+                  </button>
+                </div>
+              )}
+              {!task.tags || task.tags.length === 0 && (
+                <button
+                  onClick={onEdit}
+                  className="mt-2 px-3 py-1 rounded-md text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 hover:bg-purple-200 dark:hover:bg-purple-800/50 transition-colors"
+                >
+                  Add Tags
+                </button>
+              )}
             </div>
 
             {/* Actions */}
             <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              {/* Priority buttons */}
+              <div className="flex gap-1">
+                {(['low', 'medium', 'high'] as const).map((priority) => (
+                  <motion.button
+                    key={priority}
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => onSetPriority(priority)}
+                    className={cn(
+                      'p-1.5 rounded',
+                      priority === 'low'
+                        ? task.priority === 'low'
+                          ? 'bg-green-500 text-white'
+                          : 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+                        : priority === 'medium'
+                        ? task.priority === 'medium'
+                          ? 'bg-amber-500 text-white'
+                          : 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'
+                        : task.priority === 'high'
+                        ? 'bg-red-500 text-white'
+                        : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400',
+                      'transition-colors duration-200'
+                    )}
+                    aria-label={`Set task priority to ${priority}`}
+                  >
+                    <span className="text-xs font-bold">
+                      {priority.charAt(0).toUpperCase()}
+                    </span>
+                  </motion.button>
+                ))}
+              </div>
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}

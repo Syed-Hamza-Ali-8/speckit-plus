@@ -25,6 +25,8 @@ export interface TaskTableProps {
   onEdit: (task: Task) => void;
   onDelete: (task: Task) => void;
   onToggleStatus: (task: Task) => void;
+  onSetPriority: (task: Task, priority: 'low' | 'medium' | 'high') => void;
+  onSetTags: (task: Task, tags: string[]) => void;
 }
 
 function truncateText(text: string, maxLength: number): string {
@@ -89,6 +91,15 @@ export function TaskTable({ tasks, onEdit, onDelete, onToggleStatus }: TaskTable
             <TableHead className="bg-white/50 dark:bg-gray-900/50 font-semibold text-gray-700 dark:text-gray-300">Status</TableHead>
             <TableHead className="hidden sm:table-cell bg-white/50 dark:bg-gray-900/50 font-semibold text-gray-700 dark:text-gray-300">
               Due Date
+            </TableHead>
+            <TableHead className="hidden lg:table-cell bg-white/50 dark:bg-gray-900/50 font-semibold text-gray-700 dark:text-gray-300">
+              Priority
+            </TableHead>
+            <TableHead className="hidden xl:table-cell bg-white/50 dark:bg-gray-900/50 font-semibold text-gray-700 dark:text-gray-300">
+              Tags
+            </TableHead>
+            <TableHead className="hidden lg:table-cell bg-white/50 dark:bg-gray-900/50 font-semibold text-gray-700 dark:text-gray-300">
+              Recurring
             </TableHead>
             <TableHead className="hidden lg:table-cell bg-white/50 dark:bg-gray-900/50 font-semibold text-gray-700 dark:text-gray-300">
               Created
@@ -183,6 +194,54 @@ export function TaskTable({ tasks, onEdit, onDelete, onToggleStatus }: TaskTable
                   )}
                 </TableCell>
 
+                {/* Priority column */}
+                <TableCell className="hidden lg:table-cell py-3">
+                  {task.priority && (
+                    <div
+                      className={cn(
+                        'inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium',
+                        task.priority === 'high'
+                          ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+                          : task.priority === 'medium'
+                          ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'
+                          : 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+                      )}
+                    >
+                      {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+                    </div>
+                  )}
+                </TableCell>
+
+                {/* Tags column */}
+                <TableCell className="hidden xl:table-cell py-3">
+                  {task.tags && task.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {task.tags.slice(0, 2).map((tag, index) => (
+                        <span
+                          key={index}
+                          className="px-1.5 py-0.5 rounded text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                      {task.tags.length > 2 && (
+                        <span className="px-1.5 py-0.5 rounded text-xs bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
+                          +{task.tags.length - 2}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </TableCell>
+
+                {/* Recurring indicator column */}
+                <TableCell className="hidden lg:table-cell py-3">
+                  {task.is_recurring && (
+                    <div className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+                      Recurring
+                    </div>
+                  )}
+                </TableCell>
+
                 {/* Created column */}
                 <TableCell className="hidden lg:table-cell text-gray-600 dark:text-gray-400 py-3">
                   {formatDate(task.created_at)}
@@ -215,6 +274,44 @@ export function TaskTable({ tasks, onEdit, onDelete, onToggleStatus }: TaskTable
                         'shadow-xl rounded-xl'
                       )}
                     >
+                      <div className="px-1 py-1">
+                        <p className="px-2 py-1 text-xs font-semibold text-gray-500 dark:text-gray-400">
+                          Priority:
+                        </p>
+                        {(['low', 'medium', 'high'] as const).map((priority) => (
+                          <DropdownMenuItem
+                            key={priority}
+                            onClick={() => onSetPriority(task, priority)}
+                            className={cn(
+                              'hover:bg-purple-500/10 rounded-lg cursor-pointer flex items-center gap-2',
+                              priority === 'low'
+                                ? task.priority === 'low'
+                                  ? 'bg-green-500/20 text-green-700 dark:text-green-300'
+                                  : 'text-green-600 dark:text-green-400'
+                                : priority === 'medium'
+                                ? task.priority === 'medium'
+                                  ? 'bg-amber-500/20 text-amber-700 dark:text-amber-300'
+                                  : 'text-amber-600 dark:text-amber-400'
+                                : task.priority === 'high'
+                                ? 'bg-red-500/20 text-red-700 dark:text-red-300'
+                                : 'text-red-600 dark:text-red-400'
+                            )}
+                          >
+                            <span className="text-xs font-bold w-4">
+                              {priority.charAt(0).toUpperCase()}
+                            </span>
+                            <span className="capitalize">{priority}</span>
+                          </DropdownMenuItem>
+                        ))}
+                      </div>
+                      <div className="border-t border-white/20 dark:border-white/10 my-1" />
+                      <DropdownMenuItem
+                        onClick={() => onEdit(task)}
+                        className="hover:bg-purple-500/10 rounded-lg cursor-pointer"
+                      >
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Manage Tags
+                      </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() => onEdit(task)}
                         className="hover:bg-purple-500/10 rounded-lg cursor-pointer"
