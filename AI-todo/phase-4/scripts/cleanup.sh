@@ -1,11 +1,11 @@
 #!/bin/bash
-# Cleanup Todo App from Minikube
+# Cleanup TaskGPT from Minikube
 # Usage: ./phase-4/scripts/cleanup.sh [--full]
 
 set -e
 
-NAMESPACE="todo-app"
-RELEASE_NAME="todo-app"
+NAMESPACE="taskgpt"
+RELEASE_NAME="taskgpt"
 
 # Colors for output
 RED='\033[0;31m'
@@ -14,7 +14,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-echo -e "${BLUE}=== Todo App Cleanup ===${NC}"
+echo -e "${BLUE}=== TaskGPT Cleanup ===${NC}"
 
 # Parse arguments
 FULL_CLEANUP=false
@@ -46,8 +46,8 @@ if [ "$FULL_CLEANUP" = true ]; then
 
     # Remove Docker images
     echo "Removing Docker images..."
-    docker rmi todo-backend:latest 2>/dev/null || true
-    docker rmi todo-frontend:latest 2>/dev/null || true
+    docker rmi taskgpt-backend:latest 2>/dev/null || true
+    docker rmi taskgpt-frontend:latest 2>/dev/null || true
     echo -e "${GREEN}✓ Docker images removed${NC}"
 
     # Delete Minikube cluster
