@@ -1,0 +1,196 @@
+# Docker Compose for Local Phase 5 Development
+# Includes all services: backend, notification, recurring tasks, audit, and Redpanda
+# For Redpanda Cloud, set KAFKA_* environment variables and comment out redpanda service
+
+version: '3.8'
+
+services:
+  # Redpanda (Kafka-compatible) - For LOCAL development only
+  # Comment out this service when using Redpanda Cloud
+  redpanda:
+    image: redpandadata/redpanda:latest
+    container_name: redpanda
+    command:
+      - redpanda start
+      - --smp 1
+      - --memory 512M
+      - --overprovisioned
+      - --kafka-addr PLAINTEXT://0.0.0.0:9092
+      - --advertise-kafka-addr PLAINTEXT://redpanda:9092
+    ports:
+      - "9092:9092"
+      - "8081:8081"  # Schema Registry
+      - "8082:8082"  # REST Proxy
+    healthcheck:
+      test: ["CMD", "bash", "-c", "echo > /dev/tcp/localhost/9092"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - todo-network
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: todo
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - todo-network
+
+  # Backend Service (Main FastAPI app)
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: todo-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/todo
+      # For LOCAL Redpanda:
+      - KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
+      # For Redpanda Cloud (uncomment and set these):
+      # - KAFKA_BOOTSTRAP_SERVERS=d5f34j26d7soh80h0jk0.any.us-central1.gc.prd.cloud.redpanda.com:9092
+      # - KAFKA_SASL_USERNAME=ai-todo
+      # - KAFKA_SASL_PASSWORD=llPtLEXkTNYRLZ8FG4n2DbV0kk9SXT
+      # - KAFKA_SECURITY_PROTOCOL=SASL_SSL
+      # - KAFKA_SASL_MECHANISM=SCRAM-SHA-256
+      - DAPR_HTTP_PORT=3500
+      - DAPR_GRPC_PORT=50001
+      # OpenAI Configuration for Chatbot
+      - OPENAI_API_KEY=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
+      - OPENAI_BASE_URL=https://openrouter.ai/api/v1
+      - OPENAI_MODEL=openai/gpt-4o
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    networks:
+      - todo-network
+    restart: unless-stopped
+
+  # Notification Service (Kafka consumer)
+  notification-service:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.notification
+    container_name: todo-notification
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/todo
+      - KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
+      # For Redpanda Cloud (uncomment and set these):
+      # - KAFKA_BOOTSTRAP_SERVERS=d5f34j26d7soh80h0jk0.any.us-central1.gc.prd.cloud.redpanda.com:9092
+      # - KAFKA_SASL_USERNAME=ai-todo
+      # - KAFKA_SASL_PASSWORD=llPtLEXkTNYRLZ8FG4n2DbV0kk9SXT
+      - DAPR_HTTP_PORT=3501
+      - DAPR_GRPC_PORT=50002
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+    networks:
+      - todo-network
+    restart: unless-stopped
+
+  # Recurring Task Service (Kafka consumer)
+  recurring-task-service:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.recurring
+    container_name: todo-recurring
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/todo
+      - KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
+      # For Redpanda Cloud (uncomment and set these):
+      # - KAFKA_BOOTSTRAP_SERVERS=d5f34j26d7soh80h0jk0.any.us-central1.gc.prd.cloud.redpanda.com:9092
+      # - KAFKA_SASL_USERNAME=ai-todo
+      # - KAFKA_SASL_PASSWORD=llPtLEXkTNYRLZ8FG4n2DbV0kk9SXT
+      - DAPR_HTTP_PORT=3502
+      - DAPR_GRPC_PORT=50003
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+    networks:
+      - todo-network
+    restart: unless-stopped
+
+  # Audit Service (Kafka consumer)
+  audit-service:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.audit
+    container_name: todo-audit
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/todo
+      - KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
+      # For Redpanda Cloud (uncomment and set these):
+      # - KAFKA_BOOTSTRAP_SERVERS=d5f34j26d7soh80h0jk0.any.us-central1.gc.prd.cloud.redpanda.com:9092
+      # - KAFKA_SASL_USERNAME=ai-todo
+      # - KAFKA_SASL_PASSWORD=llPtLEXkTNYRLZ8FG4n2DbV0kk9SXT
+      - DAPR_HTTP_PORT=3503
+      - DAPR_GRPC_PORT=50004
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+    networks:
+      - todo-network
+    restart: unless-stopped
+
+  # Redpanda Console (Web UI for Kafka)
+  redpanda-console:
+    image: redpandadata/console:latest
+    container_name: redpanda-console
+    ports:
+      - "8080:8080"
+    environment:
+      - KAFKA_BROKERS=redpanda:9092
+    depends_on:
+      - redpanda
+    networks:
+      - todo-network
+
+  # Frontend Service (React/Vite app)
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend
+    container_name: todo-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - VITE_API_URL=http://backend:8000
+    depends_on:
+      - backend
+    networks:
+      - todo-network
+    restart: unless-stopped
+
+networks:
+  todo-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
