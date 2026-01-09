@@ -557,6 +557,323 @@ async def complete_task_by_name(task_name: str) -> dict:
         return {"error": str(e), "status": "error"}
 
 
+# ============================================================================
+# RECURRING TASK MCP TOOLS
+# ============================================================================
+
+@mcp.tool()
+async def create_recurring_task(
+    title: str,
+    pattern_type: str,
+    start_date: str,
+    description: str | None = None,
+    interval: int = 1,
+    end_date: str | None = None,
+    weekdays: str | None = None,
+    days_of_month: str | None = None,
+) -> dict:
+    """Create a recurring task pattern that generates tasks automatically.
+
+    Args:
+        title: The title for tasks generated from this pattern.
+        pattern_type: Type of recurrence - "daily", "weekly", or "monthly".
+        start_date: Start date in YYYY-MM-DD format.
+        description: Optional description for generated tasks.
+        interval: Interval between occurrences (default: 1).
+        end_date: Optional end date in YYYY-MM-DD format.
+        weekdays: For weekly patterns - comma-separated day names (e.g., "Monday,Wednesday,Friday").
+        days_of_month: For monthly patterns - comma-separated day numbers (e.g., "1,15,30").
+
+    Returns:
+        dict with pattern_id, status, and details of created recurring pattern.
+    """
+    from models.task_models import RecurringTaskPattern, RecurrencePattern
+    from datetime import date as date_type
+
+    if _db_session is None or _user_id is None:
+        return {"error": "Context not set", "status": "error"}
+
+    try:
+        # Validate and parse pattern_type
+        pattern_map = {
+            "daily": RecurrencePattern.DAILY,
+            "weekly": RecurrencePattern.WEEKLY,
+            "monthly": RecurrencePattern.MONTHLY
+        }
+        pattern_enum = pattern_map.get(pattern_type.lower())
+        if not pattern_enum:
+            return {
+                "error": f"Invalid pattern_type '{pattern_type}'. Must be 'daily', 'weekly', or 'monthly'.",
+                "status": "error"
+            }
+
+        # Parse dates
+        try:
+            start_date_obj = date_type.fromisoformat(start_date)
+            end_date_obj = date_type.fromisoformat(end_date) if end_date else None
+        except ValueError as e:
+            return {"error": f"Invalid date format: {str(e)}", "status": "error"}
+
+        # Parse weekdays for weekly patterns
+        weekdays_list = []
+        if pattern_type.lower() == "weekly" and weekdays:
+            day_map = {
+                "sunday": 0, "monday": 1, "tuesday": 2, "wednesday": 3,
+                "thursday": 4, "friday": 5, "saturday": 6
+            }
+            for day in weekdays.split(","):
+                day_clean = day.strip().lower()
+                if day_clean in day_map:
+                    weekdays_list.append(day_map[day_clean])
+                elif day_clean.isdigit() and 0 <= int(day_clean) <= 6:
+                    weekdays_list.append(int(day_clean))
+
+        # Parse days of month for monthly patterns
+        days_of_month_list = []
+        if pattern_type.lower() == "monthly" and days_of_month:
+            for day in days_of_month.split(","):
+                day_clean = day.strip()
+                if day_clean.isdigit() and 1 <= int(day_clean) <= 31:
+                    days_of_month_list.append(int(day_clean))
+
+        # Create recurring pattern
+        recurring_pattern = RecurringTaskPattern(
+            base_task_title=title,
+            base_task_description=description,
+            user_id=_user_id,
+            pattern_type=pattern_enum,
+            interval=interval,
+            start_date=start_date_obj,
+            end_date=end_date_obj,
+            weekdays=weekdays_list,
+            days_of_month=days_of_month_list
+        )
+
+        _db_session.add(recurring_pattern)
+        _db_session.commit()
+        _db_session.refresh(recurring_pattern)
+
+        return {
+            "pattern_id": str(recurring_pattern.id),
+            "status": "created",
+            "title": recurring_pattern.base_task_title,
+            "pattern_type": recurring_pattern.pattern_type.value,
+            "start_date": str(recurring_pattern.start_date),
+            "interval": recurring_pattern.interval,
+            "weekdays": recurring_pattern.weekdays if weekdays_list else None,
+            "days_of_month": recurring_pattern.days_of_month if days_of_month_list else None,
+        }
+
+    except Exception as e:
+        _db_session.rollback()
+        return {"error": str(e), "status": "error"}
+
+
+@mcp.tool()
+async def list_recurring_tasks() -> list[dict]:
+    """List all recurring task patterns for the user.
+
+    Returns:
+        list of dicts containing recurring pattern details.
+    """
+    from models.task_models import RecurringTaskPattern
+    from sqlmodel import select
+
+    if _db_session is None or _user_id is None:
+        return [{"error": "Context not set", "status": "error"}]
+
+    try:
+        statement = select(RecurringTaskPattern).where(
+            RecurringTaskPattern.user_id == _user_id
+        )
+        patterns = _db_session.exec(statement).all()
+
+        result = []
+        for pattern in patterns:
+            result.append({
+                "id": str(pattern.id),
+                "title": pattern.base_task_title,
+                "description": pattern.base_task_description,
+                "pattern_type": pattern.pattern_type.value,
+                "interval": pattern.interval,
+                "start_date": str(pattern.start_date),
+                "end_date": str(pattern.end_date) if pattern.end_date else None,
+                "weekdays": pattern.weekdays if pattern.weekdays else [],
+                "days_of_month": pattern.days_of_month if pattern.days_of_month else [],
+            })
+
+        return result
+
+    except Exception as e:
+        return [{"error": str(e), "status": "error"}]
+
+
+@mcp.tool()
+async def delete_recurring_task_by_name(pattern_name: str) -> dict:
+    """Delete a recurring task pattern by its name.
+
+    Args:
+        pattern_name: The title/name of the recurring pattern to delete.
+
+    Returns:
+        dict with status and message.
+    """
+    from models.task_models import RecurringTaskPattern
+    from sqlmodel import select
+
+    if _db_session is None or _user_id is None:
+        return {"error": "Context not set", "status": "error"}
+
+    try:
+        # Find matching patterns
+        statement = select(RecurringTaskPattern).where(
+            RecurringTaskPattern.user_id == _user_id
+        )
+        all_patterns = _db_session.exec(statement).all()
+
+        pattern_name_lower = pattern_name.lower().strip()
+        matching_patterns = [
+            p for p in all_patterns
+            if pattern_name_lower in p.base_task_title.lower() or
+               p.base_task_title.lower() in pattern_name_lower
+        ]
+
+        if len(matching_patterns) == 0:
+            return {
+                "status": "not_found",
+                "message": f"No recurring pattern found matching '{pattern_name}'"
+            }
+
+        if len(matching_patterns) > 1:
+            return {
+                "status": "clarification_needed",
+                "message": f"Found {len(matching_patterns)} recurring patterns matching '{pattern_name}'.",
+                "matching_patterns": [
+                    {
+                        "id": str(p.id),
+                        "title": p.base_task_title,
+                        "pattern_type": p.pattern_type.value,
+                        "start_date": str(p.start_date)
+                    }
+                    for p in matching_patterns
+                ]
+            }
+
+        # Delete the single match
+        pattern = matching_patterns[0]
+        _db_session.delete(pattern)
+        _db_session.commit()
+
+        return {
+            "status": "deleted",
+            "message": f"Recurring pattern '{pattern.base_task_title}' deleted successfully"
+        }
+
+    except Exception as e:
+        _db_session.rollback()
+        return {"error": str(e), "status": "error"}
+
+
+@mcp.tool()
+async def update_recurring_task_by_name(
+    pattern_name: str,
+    new_title: str | None = None,
+    new_description: str | None = None,
+    new_interval: int | None = None,
+    new_end_date: str | None = None,
+) -> dict:
+    """Update a recurring task pattern by its name.
+
+    Args:
+        pattern_name: The title/name of the recurring pattern to update.
+        new_title: New title for the pattern.
+        new_description: New description for generated tasks.
+        new_interval: New interval between occurrences.
+        new_end_date: New end date in YYYY-MM-DD format.
+
+    Returns:
+        dict with status and updated pattern details.
+    """
+    from models.task_models import RecurringTaskPattern
+    from sqlmodel import select
+    from datetime import date as date_type
+
+    if _db_session is None or _user_id is None:
+        return {"error": "Context not set", "status": "error"}
+
+    try:
+        # Find matching patterns
+        statement = select(RecurringTaskPattern).where(
+            RecurringTaskPattern.user_id == _user_id
+        )
+        all_patterns = _db_session.exec(statement).all()
+
+        pattern_name_lower = pattern_name.lower().strip()
+        matching_patterns = [
+            p for p in all_patterns
+            if pattern_name_lower in p.base_task_title.lower() or
+               p.base_task_title.lower() in pattern_name_lower
+        ]
+
+        if len(matching_patterns) == 0:
+            return {
+                "status": "not_found",
+                "message": f"No recurring pattern found matching '{pattern_name}'"
+            }
+
+        if len(matching_patterns) > 1:
+            return {
+                "status": "clarification_needed",
+                "message": f"Found {len(matching_patterns)} recurring patterns matching '{pattern_name}'.",
+                "matching_patterns": [
+                    {
+                        "id": str(p.id),
+                        "title": p.base_task_title,
+                        "pattern_type": p.pattern_type.value,
+                        "start_date": str(p.start_date)
+                    }
+                    for p in matching_patterns
+                ]
+            }
+
+        # Update the single match
+        pattern = matching_patterns[0]
+
+        if new_title:
+            pattern.base_task_title = new_title
+        if new_description is not None:
+            pattern.base_task_description = new_description
+        if new_interval:
+            pattern.interval = new_interval
+        if new_end_date:
+            try:
+                pattern.end_date = date_type.fromisoformat(new_end_date)
+            except ValueError as e:
+                return {"error": f"Invalid date format: {str(e)}", "status": "error"}
+
+        _db_session.add(pattern)
+        _db_session.commit()
+        _db_session.refresh(pattern)
+
+        return {
+            "status": "updated",
+            "message": f"Recurring pattern '{pattern.base_task_title}' updated successfully",
+            "pattern": {
+                "id": str(pattern.id),
+                "title": pattern.base_task_title,
+                "description": pattern.base_task_description,
+                "pattern_type": pattern.pattern_type.value,
+                "interval": pattern.interval,
+                "start_date": str(pattern.start_date),
+                "end_date": str(pattern.end_date) if pattern.end_date else None,
+            }
+        }
+
+    except Exception as e:
+        _db_session.rollback()
+        return {"error": str(e), "status": "error"}
+
+
 # Entry point for running as standalone MCP server
 if __name__ == "__main__":
     mcp.run(transport="stdio")

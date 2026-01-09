@@ -34,6 +34,22 @@ Your capabilities:
 - Delete tasks by UUID with delete_task tool (fallback)
 - Mark tasks as complete by UUID with complete_task tool (fallback)
 
+RECURRING TASKS:
+- Create recurring task patterns with create_recurring_task tool
+- List recurring patterns with list_recurring_tasks tool
+- Delete recurring patterns by name with delete_recurring_task_by_name tool
+- Update recurring patterns by name with update_recurring_task_by_name tool
+
+When users ask for recurring tasks:
+- Pattern types: "daily", "weekly", or "monthly"
+- For weekly: parse day names (Monday, Tuesday, etc.) into weekdays parameter
+- For monthly: parse day numbers (1-31) into days_of_month parameter
+- Start date should be in YYYY-MM-DD format (use today's date if not specified)
+- Examples:
+  * "Create a daily standup task" → daily pattern starting today
+  * "Weekly team meeting every Monday and Wednesday" → weekly pattern with weekdays="Monday,Wednesday"
+  * "Monthly report on the 1st and 15th" → monthly pattern with days_of_month="1,15"
+
 CRITICAL: CHOOSING THE RIGHT TOOL:
 - When the user provides a TASK NAME (e.g., "Update Hello World", "Delete my shopping task"):
   → Use the high-level *_by_name tools: update_task_by_name, delete_task_by_name, complete_task_by_name
@@ -250,6 +266,113 @@ def get_openai_tools() -> list[dict]:
                     "required": ["task_name"]
                 }
             }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "create_recurring_task",
+                "description": "Create a recurring task pattern that generates tasks automatically on a schedule (daily, weekly, or monthly).",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "title": {
+                            "type": "string",
+                            "description": "The title for tasks generated from this pattern"
+                        },
+                        "pattern_type": {
+                            "type": "string",
+                            "enum": ["daily", "weekly", "monthly"],
+                            "description": "Type of recurrence: daily, weekly, or monthly"
+                        },
+                        "start_date": {
+                            "type": "string",
+                            "description": "Start date in YYYY-MM-DD format (e.g., 2026-01-09)"
+                        },
+                        "description": {
+                            "type": "string",
+                            "description": "Optional description for generated tasks"
+                        },
+                        "interval": {
+                            "type": "integer",
+                            "description": "Interval between occurrences (default: 1)"
+                        },
+                        "end_date": {
+                            "type": "string",
+                            "description": "Optional end date in YYYY-MM-DD format"
+                        },
+                        "weekdays": {
+                            "type": "string",
+                            "description": "For weekly patterns: comma-separated day names (e.g., 'Monday,Wednesday,Friday')"
+                        },
+                        "days_of_month": {
+                            "type": "string",
+                            "description": "For monthly patterns: comma-separated day numbers (e.g., '1,15,30')"
+                        }
+                    },
+                    "required": ["title", "pattern_type", "start_date"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "list_recurring_tasks",
+                "description": "List all recurring task patterns for the user.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {}
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "delete_recurring_task_by_name",
+                "description": "Delete a recurring task pattern by its name.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "pattern_name": {
+                            "type": "string",
+                            "description": "The title/name of the recurring pattern to delete"
+                        }
+                    },
+                    "required": ["pattern_name"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "update_recurring_task_by_name",
+                "description": "Update a recurring task pattern by its name.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "pattern_name": {
+                            "type": "string",
+                            "description": "The title/name of the recurring pattern to update"
+                        },
+                        "new_title": {
+                            "type": "string",
+                            "description": "New title for the pattern"
+                        },
+                        "new_description": {
+                            "type": "string",
+                            "description": "New description for generated tasks"
+                        },
+                        "new_interval": {
+                            "type": "integer",
+                            "description": "New interval between occurrences"
+                        },
+                        "new_end_date": {
+                            "type": "string",
+                            "description": "New end date in YYYY-MM-DD format"
+                        }
+                    },
+                    "required": ["pattern_name"]
+                }
+            }
         }
     ]
 
@@ -346,6 +469,10 @@ class TodoAgent:
                     update_task_by_name,
                     delete_task_by_name,
                     complete_task_by_name,
+                    create_recurring_task,
+                    list_recurring_tasks,
+                    delete_recurring_task_by_name,
+                    update_recurring_task_by_name,
                 )
 
                 # Map tool names to MCP functions
@@ -358,6 +485,10 @@ class TodoAgent:
                     "update_task_by_name": update_task_by_name,
                     "delete_task_by_name": delete_task_by_name,
                     "complete_task_by_name": complete_task_by_name,
+                    "create_recurring_task": create_recurring_task,
+                    "list_recurring_tasks": list_recurring_tasks,
+                    "delete_recurring_task_by_name": delete_recurring_task_by_name,
+                    "update_recurring_task_by_name": update_recurring_task_by_name,
                 }
 
                 # Execute each tool call

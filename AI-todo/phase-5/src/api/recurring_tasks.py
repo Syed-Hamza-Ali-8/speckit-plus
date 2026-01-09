@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Header
 from sqlmodel import Session, select
-from typing import List
+from typing import List, Optional
 from datetime import date
 from uuid import UUID
 
-from ..models.task_models import (
+from models.task_models import (
     RecurringTaskPattern,
     RecurringTaskPatternCreate,
     RecurringTaskPatternUpdate,
@@ -12,8 +12,9 @@ from ..models.task_models import (
     Task,
     TaskCreate
 )
-from ..config.database import get_session
-from ..services.task_service import create_task_from_recurring_pattern
+from config.database import get_session
+from services.task_service import create_task_from_recurring_pattern
+from core.security import decode_access_token
 
 
 router = APIRouter(prefix="", tags=["recurring-tasks"])
@@ -22,12 +23,44 @@ router = APIRouter(prefix="", tags=["recurring-tasks"])
 @router.post("/recurring-tasks", response_model=RecurringTaskPatternRead)
 def create_recurring_task_pattern(
     recurring_pattern: RecurringTaskPatternCreate,
+    authorization: Optional[str] = Header(None),
     session: Session = Depends(get_session)
 ):
     """
     Create a recurring task pattern that will generate tasks based on the specified schedule.
+    Requires authentication - user_id is extracted from JWT token.
     """
     try:
+        # Extract user_id from JWT token
+        if not authorization or not authorization.startswith("Bearer "):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required"
+            )
+
+        token = authorization.split(" ")[1]
+        payload = decode_access_token(token)
+        if payload is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired token"
+            )
+
+        user_id_str = payload.get("sub")
+        if not user_id_str:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token payload"
+            )
+
+        try:
+            authenticated_user_id = UUID(user_id_str)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid user ID in token"
+            )
+
         # Validate the recurrence pattern
         if recurring_pattern.end_date and recurring_pattern.start_date > recurring_pattern.end_date:
             raise HTTPException(
@@ -53,8 +86,10 @@ def create_recurring_task_pattern(
                         detail="Days of month must be between 1 and 31"
                     )
 
-        # Create the recurring task pattern
-        db_recurring_pattern = RecurringTaskPattern.model_validate(recurring_pattern)
+        # Create the recurring task pattern with authenticated user_id
+        pattern_data = recurring_pattern.model_dump()
+        pattern_data['user_id'] = authenticated_user_id  # Override with authenticated user
+        db_recurring_pattern = RecurringTaskPattern.model_validate(pattern_data)
         session.add(db_recurring_pattern)
         session.commit()
         session.refresh(db_recurring_pattern)
@@ -77,22 +112,66 @@ def create_recurring_task_pattern(
 
 @router.get("/users/{user_id}/recurring-tasks", response_model=List[RecurringTaskPatternRead])
 def get_recurring_task_patterns(
-    user_id: UUID,
+    user_id: str,
     skip: int = 0,
     limit: int = 100,
+    authorization: Optional[str] = Header(None),
     session: Session = Depends(get_session)
 ):
     """
     Get all recurring task patterns for a specific user.
+    Use 'me' as user_id to get patterns for the authenticated user.
     """
     try:
+        # Handle "me" as a special case for authenticated user
+        if user_id == "me":
+            if not authorization or not authorization.startswith("Bearer "):
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Authentication required for 'me' endpoint"
+                )
+
+            token = authorization.split(" ")[1]
+            payload = decode_access_token(token)
+            if payload is None:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid or expired token"
+                )
+
+            user_id_str = payload.get("sub")
+            if not user_id_str:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid token payload"
+                )
+
+            try:
+                resolved_user_id = UUID(user_id_str)
+            except ValueError:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid user ID in token"
+                )
+        else:
+            # Parse user_id as UUID
+            try:
+                resolved_user_id = UUID(user_id)
+            except ValueError:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid user ID format"
+                )
+
         statement = select(RecurringTaskPattern).where(
-            RecurringTaskPattern.user_id == user_id
+            RecurringTaskPattern.user_id == resolved_user_id
         ).offset(skip).limit(limit)
 
         recurring_patterns = session.exec(statement).all()
         return recurring_patterns
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

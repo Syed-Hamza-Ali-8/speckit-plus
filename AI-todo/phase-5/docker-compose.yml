@@ -72,7 +72,7 @@ services:
       # OpenAI Configuration for Chatbot
       - OPENAI_API_KEY=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
       - OPENAI_BASE_URL=https://openrouter.ai/api/v1
-      - OPENAI_MODEL=openai/gpt-4o
+      - OPENAI_MODEL=openai/gpt-4o-mini
     depends_on:
       postgres:
         condition: service_healthy

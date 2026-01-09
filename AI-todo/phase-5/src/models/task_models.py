@@ -2,8 +2,10 @@ from datetime import datetime, date
 from enum import Enum
 from typing import List, Optional
 from uuid import UUID, uuid4
-from sqlmodel import SQLModel, Field, Relationship
+from sqlmodel import SQLModel, Field, Relationship, Column
+from sqlalchemy import JSON
 from pydantic import BaseModel
+from .user_models import User
 
 
 class TaskStatus(str, Enum):
@@ -38,34 +40,32 @@ class TaskBase(SQLModel):
 
 
 class TaskCreate(TaskBase):
-    priority: Optional[PriorityLevel] = PriorityLevel.MEDIUM
-    tags: Optional[List[str]] = []
-    due_date: Optional[date] = None  # Use date to match Phase 2
+    priority: PriorityLevel = PriorityLevel.MEDIUM
+    tags: list[str] = []
+    due_date: date | None = None  # Use date to match Phase 2
     is_recurring: bool = False
-    recurring_pattern_id: Optional[UUID] = None
+    recurring_pattern_id: UUID | None = None
 
 
 class TaskUpdate(SQLModel):
-    title: Optional[str] = Field(default=None, min_length=1, max_length=200)
-    description: Optional[str] = Field(default=None, max_length=1000)
-    status: Optional[TaskStatus] = None  # Use Phase 2 TaskStatus
-    priority: Optional[PriorityLevel] = None
-    tags: Optional[List[str]] = None
-    due_date: Optional[date] = None  # Use date to match Phase 2
+    title: str | None = Field(default=None, min_length=1, max_length=200)
+    description: str | None = Field(default=None, max_length=1000)
+    status: TaskStatus | None = None  # Use Phase 2 TaskStatus
+    priority: PriorityLevel | None = None
+    tags: list[str] | None = None
+    due_date: date | None = None  # Use date to match Phase 2
 
 
 class Task(TaskBase, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     status: TaskStatus = Field(default=TaskStatus.PENDING)  # Use Phase 2 TaskStatus
-    priority: Optional[PriorityLevel] = PriorityLevel.MEDIUM
-    tags: Optional[List[str]] = Field(default=[])  # Store as JSON in DB
-    due_date: Optional[date] = Field(default=None)  # Use date to match Phase 2
+    priority: PriorityLevel = Field(default=PriorityLevel.MEDIUM)
+    tags: list[str] = Field(default=[], sa_column=Column(JSON))  # Store as JSON in DB
+    due_date: date | None = Field(default=None)  # Use date to match Phase 2
     is_reminder_sent: bool = False
-    reminder_times: Optional[List[datetime]] = Field(default=[])  # Store as JSON in DB
+    reminder_times: Optional[List[datetime]] = Field(default=[], sa_column=Column(JSON))  # Store as JSON in DB
     is_recurring: bool = False
     recurring_pattern_id: Optional[UUID] = Field(default=None, foreign_key="recurringtaskpattern.id")
-    parent_task_id: Optional[UUID] = Field(default=None, foreign_key="task.id")
-    next_occurrence_id: Optional[UUID] = Field(default=None, foreign_key="task.id")
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     created_by: UUID = Field(foreign_key="user.id")
@@ -73,36 +73,44 @@ class Task(TaskBase, table=True):
 
     # Relationships
     recurring_pattern: Optional["RecurringTaskPattern"] = Relationship(back_populates="tasks")
-    parent_task: Optional["Task"] = Relationship(sa_relationship_kwargs=dict(remote_side="Task.id"))
-    next_occurrence: Optional["Task"] = Relationship(sa_relationship_kwargs=dict(remote_side="Task.id"))
-    child_tasks: List["Task"] = Relationship(sa_relationship_kwargs=dict(remote_side="Task.parent_task_id"))
+    reminders: List["Reminder"] = Relationship(back_populates="task")
+    history: List["TaskHistory"] = Relationship(back_populates="task")
 
 
 class RecurringTaskPatternBase(SQLModel):
     base_task_title: str = Field(max_length=200)
-    base_task_description: Optional[str] = None
+    base_task_description: str | None = None
     user_id: UUID = Field(foreign_key="user.id")
     pattern_type: RecurrencePattern
     interval: int = 1
     start_date: date  # Use date for consistency
-    end_date: Optional[date] = None
-    weekdays: Optional[List[int]] = []
-    days_of_month: Optional[List[int]] = []
+    end_date: date | None = None
+    weekdays: list[int] = Field(default=[], sa_column=Column(JSON))
+    days_of_month: list[int] = Field(default=[], sa_column=Column(JSON))
 
 
-class RecurringTaskPatternCreate(RecurringTaskPatternBase):
-    pass
+class RecurringTaskPatternCreate(SQLModel):
+    """Create model for recurring task pattern - user_id is set from JWT token."""
+    base_task_title: str = Field(max_length=200)
+    base_task_description: str | None = None
+    pattern_type: RecurrencePattern
+    interval: int = 1
+    start_date: date
+    end_date: date | None = None
+    weekdays: list[int] = Field(default_factory=list)
+    days_of_month: list[int] = Field(default_factory=list)
+    # user_id is NOT included - it's extracted from JWT token in the API endpoint
 
 
 class RecurringTaskPatternUpdate(SQLModel):
-    base_task_title: Optional[str] = Field(default=None, max_length=200)
-    base_task_description: Optional[str] = None
-    pattern_type: Optional[RecurrencePattern] = None
-    interval: Optional[int] = None
-    start_date: Optional[date] = None
-    end_date: Optional[date] = None
-    weekdays: Optional[List[int]] = None
-    days_of_month: Optional[List[int]] = None
+    base_task_title: str | None = Field(default=None, max_length=200)
+    base_task_description: str | None = None
+    pattern_type: RecurrencePattern | None = None
+    interval: int | None = None
+    start_date: date | None = None
+    end_date: date | None = None
+    weekdays: list[int] | None = None
+    days_of_month: list[int] | None = None
 
 
 class RecurringTaskPattern(RecurringTaskPatternBase, table=True):
@@ -135,11 +143,11 @@ class Tag(TagBase, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
-    # Relationships
-    tasks: List["Task"] = Relationship(
-        back_populates="tags",
-        link_model="TaskTagLink"
-    )
+    # Relationships commented out - Phase 5 uses JSON array for tags in Task model instead of many-to-many
+    # tasks: List["Task"] = Relationship(
+    #     back_populates="tags",
+    #     link_model="TaskTagLink"
+    # )
 
 
 class ReminderBase(SQLModel):
@@ -173,8 +181,8 @@ class TaskHistoryBase(SQLModel):
     task_id: UUID = Field(foreign_key="task.id")
     user_id: UUID = Field(foreign_key="user.id")
     action: str  # created, updated, completed, deleted, etc.
-    previous_state: Optional[dict] = {}
-    new_state: Optional[dict] = {}
+    previous_state: Optional[dict] = Field(default={}, sa_column=Column(JSON))
+    new_state: Optional[dict] = Field(default={}, sa_column=Column(JSON))
 
 
 class TaskHistoryCreate(TaskHistoryBase):
@@ -205,8 +213,6 @@ class TaskRead(TaskBase):
     is_reminder_sent: bool
     is_recurring: bool
     recurring_pattern_id: Optional[UUID] = None
-    parent_task_id: Optional[UUID] = None
-    next_occurrence_id: Optional[UUID] = None
     created_at: datetime
     updated_at: datetime
     created_by: UUID
@@ -242,15 +248,15 @@ class TaskHistoryRead(TaskHistoryBase):
 # Request/Response models for API endpoints
 class TaskSearchRequest(BaseModel):
     query: str
-    status: Optional[str] = None  # all, pending, completed
-    priority: Optional[PriorityLevel] = None
-    tags: Optional[List[str]] = []
-    due_before: Optional[date] = None
-    due_after: Optional[date] = None
-    sort_by: Optional[str] = "created_at"  # created_at, title, due_date, priority
-    order: Optional[str] = "desc"  # asc, desc
-    page: Optional[int] = 1
-    per_page: Optional[int] = 20
+    status: str | None = None  # all, pending, completed
+    priority: PriorityLevel | None = None
+    tags: list[str] = Field(default_factory=list)
+    due_before: date | None = None
+    due_after: date | None = None
+    sort_by: str = "created_at"  # created_at, title, due_date, priority
+    order: str = "desc"  # asc, desc
+    page: int = 1
+    per_page: int = 20
 
 
 class TaskSearchResponse(BaseModel):
