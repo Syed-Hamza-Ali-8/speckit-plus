@@ -15,10 +15,10 @@ class KafkaProducerService:
     def __init__(self):
         self.producer = None
         self.bootstrap_servers = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
-        self.security_protocol = os.getenv("KAFKA_SECURITY_PROTOCOL", "PLAINTEXT")
-        self.sasl_mechanism = os.getenv("KAFKA_SASL_MECHANISM", None)
-        self.sasl_username = os.getenv("KAFKA_SASL_USERNAME", None)
-        self.sasl_password = os.getenv("KAFKA_SASL_PASSWORD", None)
+        self.sasl_username = os.getenv("KAFKA_SASL_USERNAME", "")
+        self.sasl_password = os.getenv("KAFKA_SASL_PASSWORD", "")
+        self.security_protocol = os.getenv("KAFKA_SECURITY_PROTOCOL", "SASL_SSL")
+        self.sasl_mechanism = os.getenv("KAFKA_SASL_MECHANISM", "SCRAM-SHA-256")
 
     async def start(self):
         """Initialize and start the Kafka producer."""
@@ -28,19 +28,19 @@ class KafkaProducerService:
                 'bootstrap_servers': self.bootstrap_servers,
                 'value_serializer': lambda v: json.dumps(v).encode('utf-8'),
                 'acks': 'all',  # Ensure durability
-                'retries': 3,
-                'batch_size': 16000,
+                'max_batch_size': 16000,
                 'linger_ms': 5
             }
 
-            # Add security configuration if needed
-            if self.security_protocol and self.security_protocol.upper() != "PLAINTEXT":
-                config.update({
-                    'security_protocol': self.security_protocol,
-                    'sasl_mechanism': self.sasl_mechanism,
-                    'sasl_plain_username': self.sasl_username,
-                    'sasl_plain_password': self.sasl_password,
-                })
+            # Add SASL authentication if credentials are provided
+            if self.sasl_username and self.sasl_password:
+                config['sasl_mechanism'] = self.sasl_mechanism
+                config['sasl_plain_username'] = self.sasl_username
+                config['sasl_plain_password'] = self.sasl_password
+                config['security_protocol'] = self.security_protocol
+                logger.info(f"Connecting to Kafka with SASL authentication to {self.bootstrap_servers}")
+            else:
+                logger.info(f"Connecting to Kafka without authentication at {self.bootstrap_servers}")
 
             self.producer = AIOKafkaProducer(**config)
             await self.producer.start()

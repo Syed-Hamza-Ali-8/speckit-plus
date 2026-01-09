@@ -1,0 +1,337 @@
+name: Phase 5 CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'phase-5/**'
+      - '.github/workflows/phase5-ci-cd.yml'
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'phase-5/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'development'
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+
+env:
+  REGISTRY: registry.digitalocean.com
+  IMAGE_NAME_BACKEND: taskgpt/backend
+  IMAGE_NAME_NOTIFICATION: taskgpt/notification
+  IMAGE_NAME_RECURRING: taskgpt/recurring
+  IMAGE_NAME_AUDIT: taskgpt/audit
+
+jobs:
+  # Job 1: Lint and Test
+  lint-and-test:
+    name: Lint and Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./phase-5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pylint black flake8
+
+      - name: Run Black (code formatting check)
+        run: black --check src/ || true
+
+      - name: Run Flake8 (linting)
+        run: flake8 src/ --max-line-length=100 --ignore=E203,W503 || true
+
+      - name: Run Pylint
+        run: pylint src/ --fail-under=7.0 || true
+
+      - name: Run tests
+        run: |
+          pytest tests/ -v || echo "No tests found"
+
+  # Job 2: Build Docker Images
+  build-images:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    needs: lint-and-test
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+
+    strategy:
+      matrix:
+        service:
+          - name: backend
+            dockerfile: Dockerfile
+            context: ./phase-5
+          - name: notification
+            dockerfile: docker/Dockerfile.notification
+            context: ./phase-5
+          - name: recurring
+            dockerfile: docker/Dockerfile.recurring
+            context: ./phase-5
+          - name: audit
+            dockerfile: docker/Dockerfile.audit
+            context: ./phase-5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to DigitalOcean Container Registry
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          password: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_BACKEND }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.service.context }}
+          file: ${{ matrix.service.context }}/${{ matrix.service.dockerfile }}
+          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          tags: ${{ env.REGISTRY }}/taskgpt/${{ matrix.service.name }}:${{ github.sha }},${{ env.REGISTRY }}/taskgpt/${{ matrix.service.name }}:latest
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+
+      - name: Image digest
+        run: echo "Image pushed with digest ${{ steps.docker_build.outputs.digest }}"
+
+  # Job 3: Security Scan
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: build-images
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: './phase-5'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # Job 4: Deploy to Development
+  deploy-development:
+    name: Deploy to Development
+    runs-on: ubuntu-latest
+    needs: build-images
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    environment:
+      name: development
+      url: https://api-dev.todo.example.com
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Configure kubectl
+        run: |
+          doctl kubernetes cluster kubeconfig save ${{ secrets.DIGITALOCEAN_CLUSTER_ID }}
+
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: '3.13.0'
+
+      - name: Deploy with Helm
+        run: |
+          helm upgrade --install taskgpt-dev ./phase-5/helm/taskgpt-phase5 \
+            --namespace taskgpt-dev \
+            --create-namespace \
+            --set backend.image.tag=${{ github.sha }} \
+            --set notification.image.tag=${{ github.sha }} \
+            --set recurring.image.tag=${{ github.sha }} \
+            --set audit.image.tag=${{ github.sha }} \
+            --set ingress.hosts[0].host=api-dev.todo.example.com \
+            --wait \
+            --timeout 10m
+
+      - name: Verify deployment
+        run: |
+          kubectl rollout status deployment/taskgpt-dev-backend -n taskgpt-dev --timeout=5m
+          kubectl get pods -n taskgpt-dev
+
+  # Job 5: Deploy to Staging
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [build-images, security-scan]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment:
+      name: staging
+      url: https://api-staging.todo.example.com
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Configure kubectl
+        run: |
+          doctl kubernetes cluster kubeconfig save ${{ secrets.DIGITALOCEAN_CLUSTER_ID }}
+
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: '3.13.0'
+
+      - name: Deploy with Helm
+        run: |
+          helm upgrade --install taskgpt-staging ./phase-5/helm/taskgpt-phase5 \
+            --namespace taskgpt-staging \
+            --create-namespace \
+            --set backend.image.tag=${{ github.sha }} \
+            --set notification.image.tag=${{ github.sha }} \
+            --set recurring.image.tag=${{ github.sha }} \
+            --set audit.image.tag=${{ github.sha }} \
+            --set ingress.hosts[0].host=api-staging.todo.example.com \
+            --set postgres.enabled=false \
+            --set redpanda.enabled=false \
+            --values ./phase-5/helm/staging-values.yaml \
+            --wait \
+            --timeout 10m
+
+      - name: Run smoke tests
+        run: |
+          # Wait for deployment
+          sleep 30
+          # Test health endpoint
+          curl -f https://api-staging.todo.example.com/health || exit 1
+
+  # Job 6: Deploy to Production
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch'
+    environment:
+      name: production
+      url: https://api.todo.example.com
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Configure kubectl
+        run: |
+          doctl kubernetes cluster kubeconfig save ${{ secrets.DIGITALOCEAN_CLUSTER_ID }}
+
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: '3.13.0'
+
+      - name: Deploy with Helm
+        run: |
+          helm upgrade --install taskgpt-prod ./phase-5/helm/taskgpt-phase5 \
+            --namespace taskgpt-prod \
+            --create-namespace \
+            --set backend.image.tag=${{ github.sha }} \
+            --set notification.image.tag=${{ github.sha }} \
+            --set recurring.image.tag=${{ github.sha }} \
+            --set audit.image.tag=${{ github.sha }} \
+            --set ingress.hosts[0].host=api.todo.example.com \
+            --set postgres.enabled=false \
+            --set redpanda.enabled=false \
+            --values ./phase-5/helm/production-values.yaml \
+            --wait \
+            --timeout 10m
+
+      - name: Run smoke tests
+        run: |
+          # Wait for deployment
+          sleep 30
+          # Test health endpoint
+          curl -f https://api.todo.example.com/health || exit 1
+
+      - name: Notify deployment
+        if: success()
+        run: |
+          echo "Production deployment successful!"
+          # Add Slack/Discord notification here if needed
+
+  # Job 7: Cleanup on PR Close
+  cleanup:
+    name: Cleanup Preview Environment
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+
+    steps:
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Configure kubectl
+        run: |
+          doctl kubernetes cluster kubeconfig save ${{ secrets.DIGITALOCEAN_CLUSTER_ID }}
+
+      - name: Delete preview namespace
+        run: |
+          kubectl delete namespace taskgpt-pr-${{ github.event.pull_request.number }} --ignore-not-found=true

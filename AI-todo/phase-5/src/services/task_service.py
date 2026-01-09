@@ -2,7 +2,7 @@ from sqlmodel import Session
 from datetime import datetime, timedelta
 from typing import Optional
 import logging
-from ..models.task_models import Task, RecurringTaskPattern, TaskCreate
+from models.task_models import Task, RecurringTaskPattern, TaskCreate
 
 
 def create_task_from_recurring_pattern(session: Session, pattern: RecurringTaskPattern) -> Task:
@@ -176,13 +176,11 @@ def process_completed_recurring_task(session: Session, task_id: int):
         title=pattern.base_task_title,
         description=pattern.base_task_description,
         user_id=pattern.user_id,
-        completed=False,
         priority=completed_task.priority,  # Inherit priority from completed task
         tags=completed_task.tags,  # Inherit tags from completed task
         due_date=next_occurrence_date,  # Set due date to next occurrence
         is_recurring=True,
         recurring_pattern_id=pattern.id,
-        parent_task_id=completed_task.id,  # Link to the completed task
         created_by=pattern.user_id,
         updated_by=pattern.user_id
     )
@@ -190,11 +188,6 @@ def process_completed_recurring_task(session: Session, task_id: int):
     session.add(new_task)
     session.commit()
     session.refresh(new_task)
-
-    # Update the completed task to link to the next occurrence
-    completed_task.next_occurrence_id = new_task.id
-    session.add(completed_task)
-    session.commit()
 
     return new_task
 

@@ -1,0 +1,54 @@
+# Dapr Pub/Sub Component for Kafka (Redpanda Cloud Production Configuration)
+# This component enables event-driven architecture using Kafka/Redpanda
+# Usage: Publish and subscribe to task events, reminders, and updates
+
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: kafka-pubsub
+  namespace: taskgpt
+spec:
+  type: pubsub.kafka
+  version: v1
+  metadata:
+    # Redpanda Cloud broker addresses
+    - name: brokers
+      value: "d5f34j26d7soh80h0jk0.any.us-central1.gc.prd.cloud.redpanda.com:9092"
+
+    # Consumer group for this service
+    - name: consumerGroup
+      value: "todo-service-group"
+
+    # Client ID for tracking
+    - name: clientId
+      value: "todo-backend"
+
+    # SASL Authentication for Redpanda Cloud
+    - name: authType
+      value: "password"
+    - name: saslUsername
+      secretKeyRef:
+        name: kafka-secrets
+        key: username
+    - name: saslPassword
+      secretKeyRef:
+        name: kafka-secrets
+        key: password
+
+    # Security protocol for Redpanda Cloud
+    - name: securityProtocol
+      value: "SASL_SSL"
+    - name: saslMechanism
+      value: "SCRAM-SHA-256"
+
+    # Consumer settings
+    - name: consumeRetryInterval
+      value: "200ms"
+
+    # Maximum message bytes
+    - name: maxMessageBytes
+      value: "1024000"
+
+    # Auto-create topics if they don't exist
+    - name: enableTopicAutoCreation
+      value: "true"

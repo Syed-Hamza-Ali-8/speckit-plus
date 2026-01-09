@@ -1,0 +1,11 @@
+# Namespace for Phase V Todo Application
+# Provides isolation and resource management
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: taskgpt
+  labels:
+    name: taskgpt
+    app: todo-phase-v
+    environment: development

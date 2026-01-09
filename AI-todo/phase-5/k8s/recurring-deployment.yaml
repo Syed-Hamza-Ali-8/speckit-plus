@@ -1,0 +1,76 @@
+# Recurring Task Service Deployment with Dapr Sidecar
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: todo-recurring
+  namespace: taskgpt
+  labels:
+    app: todo-recurring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: todo-recurring
+  template:
+    metadata:
+      labels:
+        app: todo-recurring
+      annotations:
+        # Dapr annotations
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "todo-recurring"
+        dapr.io/log-level: "info"
+        dapr.io/enable-api-logging: "true"
+        dapr.io/config: "dapr-config"
+    spec:
+      containers:
+      - name: recurring
+        image: todo-recurring:latest
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secrets
+              key: connectionString
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          valueFrom:
+            configMapKeyRef:
+              name: todo-config
+              key: KAFKA_BOOTSTRAP_SERVERS
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: todo-config
+              key: LOG_LEVEL
+        livenessProbe:
+          exec:
+            command:
+            - python
+            - -c
+            - "import sys; sys.exit(0)"
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+
+---
+# Service for recurring task (if needed for health checks)
+apiVersion: v1
+kind: Service
+metadata:
+  name: todo-recurring
+  namespace: taskgpt
+  labels:
+    app: todo-recurring
+spec:
+  type: ClusterIP
+  clusterIP: None  # Headless service
+  selector:
+    app: todo-recurring

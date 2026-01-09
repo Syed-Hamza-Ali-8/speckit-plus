@@ -1,0 +1,100 @@
+{{- if .Values.backend.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "taskgpt-phase5.fullname" . }}-backend
+  namespace: {{ include "taskgpt-phase5.namespace" . }}
+  labels:
+    {{- include "taskgpt-phase5.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+spec:
+  replicas: {{ .Values.backend.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "taskgpt-phase5.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: backend
+  template:
+    metadata:
+      labels:
+        {{- include "taskgpt-phase5.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: backend
+      annotations:
+        {{- if .Values.backend.dapr.enabled }}
+        dapr.io/enabled: "true"
+        dapr.io/app-id: {{ .Values.backend.dapr.appId | quote }}
+        dapr.io/app-port: {{ .Values.backend.dapr.appPort | quote }}
+        dapr.io/log-level: {{ .Values.backend.dapr.logLevel | quote }}
+        dapr.io/enable-api-logging: "true"
+        dapr.io/config: "dapr-config"
+        {{- end }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "taskgpt-phase5.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+      - name: backend
+        securityContext:
+          {{- toYaml .Values.securityContext | nindent 12 }}
+        image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+        imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.backend.service.targetPort }}
+          protocol: TCP
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "taskgpt-phase5.fullname" . }}-postgres
+              key: connectionString
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "taskgpt-phase5.fullname" . }}-config
+              key: KAFKA_BOOTSTRAP_SERVERS
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "taskgpt-phase5.fullname" . }}-config
+              key: LOG_LEVEL
+        - name: ENVIRONMENT
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "taskgpt-phase5.fullname" . }}-config
+              key: ENVIRONMENT
+        {{- if .Values.backend.healthCheck.enabled }}
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.backend.healthCheck.path }}
+            port: {{ .Values.backend.service.targetPort }}
+          initialDelaySeconds: {{ .Values.backend.healthCheck.initialDelaySeconds }}
+          periodSeconds: {{ .Values.backend.healthCheck.periodSeconds }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.backend.healthCheck.path }}
+            port: {{ .Values.backend.service.targetPort }}
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        {{- end }}
+        resources:
+          {{- toYaml .Values.backend.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

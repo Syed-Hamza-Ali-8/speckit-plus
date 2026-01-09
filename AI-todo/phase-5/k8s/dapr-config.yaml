@@ -1,0 +1,42 @@
+# Dapr Configuration for the application
+
+apiVersion: dapr.io/v1alpha1
+kind: Configuration
+metadata:
+  name: dapr-config
+  namespace: taskgpt
+spec:
+  # Tracing configuration
+  tracing:
+    samplingRate: "1"
+    zipkin:
+      endpointAddress: "http://zipkin.default.svc.cluster.local:9411/api/v2/spans"
+
+  # Metrics configuration
+  metric:
+    enabled: true
+
+  # mTLS configuration (disabled for local development)
+  mtls:
+    enabled: false
+    workloadCertTTL: "24h"
+    allowedClockSkew: "15m"
+    controlPlaneTrustDomain: "dapr.io"
+    sentryAddress: "dapr-sentry.dapr-system.svc.cluster.local:443"
+
+  # Access control
+  accessControl:
+    defaultAction: allow
+    trustDomain: "public"
+
+  # Secrets configuration
+  secrets:
+    scopes:
+      - storeName: kubernetes-secrets
+        defaultAccess: allow
+
+  # Component configuration
+  components:
+    # Deny components by default
+    deny:
+      - "component-to-deny"

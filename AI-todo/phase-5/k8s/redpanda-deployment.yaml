@@ -1,0 +1,85 @@
+# Redpanda Deployment for local Kafka
+# NOTE: For production, use Redpanda Cloud or managed Kafka
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redpanda
+  namespace: taskgpt
+  labels:
+    app: redpanda
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redpanda
+  template:
+    metadata:
+      labels:
+        app: redpanda
+    spec:
+      containers:
+      - name: redpanda
+        image: redpandadata/redpanda:latest
+        command:
+          - redpanda
+          - start
+          - --smp
+          - "1"
+          - --memory
+          - "512M"
+          - --overprovisioned
+          - --kafka-addr
+          - "PLAINTEXT://0.0.0.0:9092"
+          - --advertise-kafka-addr
+          - "PLAINTEXT://redpanda.taskgpt.svc.cluster.local:9092"
+        ports:
+        - containerPort: 9092
+          name: kafka
+        - containerPort: 8081
+          name: schema-registry
+        - containerPort: 8082
+          name: rest-proxy
+        livenessProbe:
+          tcpSocket:
+            port: 9092
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 9092
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redpanda
+  namespace: taskgpt
+  labels:
+    app: redpanda
+spec:
+  type: ClusterIP
+  ports:
+  - port: 9092
+    targetPort: 9092
+    protocol: TCP
+    name: kafka
+  - port: 8081
+    targetPort: 8081
+    protocol: TCP
+    name: schema-registry
+  - port: 8082
+    targetPort: 8082
+    protocol: TCP
+    name: rest-proxy
+  selector:
+    app: redpanda

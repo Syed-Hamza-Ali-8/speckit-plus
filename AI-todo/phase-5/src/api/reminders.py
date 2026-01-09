@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, date
 from uuid import UUID
 import json
 
-from ..models.task_models import (
+from models.task_models import (
     Task,
     Reminder,
     ReminderCreate,
@@ -14,7 +14,7 @@ from ..models.task_models import (
     TaskSearchRequest,
     TaskSearchResponse
 )
-from ..config.database import get_session
+from config.database import get_session
 
 
 router = APIRouter(prefix="", tags=["reminders"])

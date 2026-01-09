@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "taskgpt-phase5.fullname" . }}-config
+  namespace: {{ include "taskgpt-phase5.namespace" . }}
+  labels:
+    {{- include "taskgpt-phase5.labels" . | nindent 4 }}
+data:
+  KAFKA_BOOTSTRAP_SERVERS: {{ .Values.config.kafkaBootstrapServers | quote }}
+  KAFKA_TOPIC_TASK_EVENTS: {{ .Values.config.kafkaTopics.taskEvents | quote }}
+  KAFKA_TOPIC_REMINDERS: {{ .Values.config.kafkaTopics.reminders | quote }}
+  KAFKA_TOPIC_UPDATES: {{ .Values.config.kafkaTopics.updates | quote }}
+  LOG_LEVEL: {{ .Values.config.logLevel | quote }}
+  ENVIRONMENT: {{ .Values.app.environment | quote }}
+  DAPR_LOG_LEVEL: {{ .Values.config.dapr.logLevel | quote }}
+  DAPR_ENABLE_MTLS: {{ .Values.config.dapr.enableMtls | quote }}
+  APP_NAME: {{ .Values.app.name | quote }}
+  API_VERSION: "v1"

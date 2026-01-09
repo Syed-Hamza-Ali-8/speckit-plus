@@ -91,11 +91,12 @@ class Task(SQLModel, table=True):
         description="Optional due date for the task",
     )
     # Phase V: Advanced features
-    priority: PriorityLevel = Field(
-        default=PriorityLevel.MEDIUM,
+    priority: str = Field(
+        default="medium",
         sa_column=Column(
-            SAEnum(PriorityLevel, native_enum=False, length=20),
+            sa.String(20),
             nullable=False,
+            server_default="medium"
         ),
         description="Task priority level",
     )

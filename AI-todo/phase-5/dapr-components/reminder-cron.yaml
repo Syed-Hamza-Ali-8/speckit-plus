@@ -1,0 +1,77 @@
+# Dapr Cron Binding for Scheduled Reminder Checks
+# This component triggers reminder processing at regular intervals
+# Usage: Check for due tasks and send notifications
+
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: reminder-cron
+  namespace: taskgpt
+spec:
+  type: bindings.cron
+  version: v1
+  metadata:
+    # Cron schedule: Check every 5 minutes
+    # Format: minute hour day month weekday
+    # "*/5 * * * *" = Every 5 minutes
+    # "0 * * * *" = Every hour
+    # "0 9 * * *" = Every day at 9 AM
+    - name: schedule
+      value: "*/5 * * * *"
+
+    # Direction: input only (triggers events)
+    - name: direction
+      value: "input"
+
+---
+# Additional cron bindings for different schedules
+
+# Hourly task processing
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: hourly-tasks-cron
+  namespace: taskgpt
+spec:
+  type: bindings.cron
+  version: v1
+  metadata:
+    # Check for recurring tasks every hour
+    - name: schedule
+      value: "0 * * * *"
+    - name: direction
+      value: "input"
+
+---
+# Daily cleanup job
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: daily-cleanup-cron
+  namespace: taskgpt
+spec:
+  type: bindings.cron
+  version: v1
+  metadata:
+    # Run cleanup at 2 AM daily
+    - name: schedule
+      value: "0 2 * * *"
+    - name: direction
+      value: "input"
+
+---
+# Cron Schedule Reference:
+# ┌───────────── minute (0 - 59)
+# │ ┌───────────── hour (0 - 23)
+# │ │ ┌───────────── day of month (1 - 31)
+# │ │ │ ┌───────────── month (1 - 12)
+# │ │ │ │ ┌───────────── day of week (0 - 6) (Sunday to Saturday)
+# │ │ │ │ │
+# * * * * *
+#
+# Examples:
+# */5 * * * *     - Every 5 minutes
+# 0 * * * *       - Every hour
+# 0 0 * * *       - Every day at midnight
+# 0 9 * * 1       - Every Monday at 9 AM
+# 0 0 1 * *       - First day of every month

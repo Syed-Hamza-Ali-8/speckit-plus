@@ -1,0 +1,61 @@
+Thank you for installing {{ .Chart.Name }}!
+
+Your release is named {{ .Release.Name }}.
+
+To learn more about the release, try:
+
+  $ helm status {{ .Release.Name }} -n {{ include "taskgpt-phase5.namespace" . }}
+  $ helm get all {{ .Release.Name }} -n {{ include "taskgpt-phase5.namespace" . }}
+
+{{- if .Values.ingress.enabled }}
+{{- range $host := .Values.ingress.hosts }}
+  {{- range .paths }}
+The application is available at:
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ $host.host }}{{ .path }}
+  {{- end }}
+{{- end }}
+{{- else if contains "NodePort" .Values.backend.service.type }}
+Get the application URL by running:
+  export NODE_PORT=$(kubectl get --namespace {{ include "taskgpt-phase5.namespace" . }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "taskgpt-phase5.fullname" . }}-backend)
+  export NODE_IP=$(kubectl get nodes --namespace {{ include "taskgpt-phase5.namespace" . }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo http://$NODE_IP:$NODE_PORT
+{{- else if contains "LoadBalancer" .Values.backend.service.type }}
+Get the application URL by running:
+  NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+  export SERVICE_IP=$(kubectl get svc --namespace {{ include "taskgpt-phase5.namespace" . }} {{ include "taskgpt-phase5.fullname" . }}-backend --template "{{"{{ range (index .status.loadBalancer.ingress 0) }}{{.}}{{ end }}"}}")
+  echo http://$SERVICE_IP:{{ .Values.backend.service.port }}
+{{- else if contains "ClusterIP" .Values.backend.service.type }}
+Get the application URL by running:
+  export POD_NAME=$(kubectl get pods --namespace {{ include "taskgpt-phase5.namespace" . }} -l "app.kubernetes.io/name={{ include "taskgpt-phase5.name" . }},app.kubernetes.io/instance={{ .Release.Name }},app.kubernetes.io/component=backend" -o jsonpath="{.items[0].metadata.name}")
+  echo "Visit http://127.0.0.1:8080 to use your application"
+  kubectl --namespace {{ include "taskgpt-phase5.namespace" . }} port-forward $POD_NAME 8080:{{ .Values.backend.service.targetPort }}
+{{- end }}
+
+Deployed services:
+{{- if .Values.backend.enabled }}
+  ✓ Backend API
+{{- end }}
+{{- if .Values.notification.enabled }}
+  ✓ Notification Service
+{{- end }}
+{{- if .Values.recurring.enabled }}
+  ✓ Recurring Task Service
+{{- end }}
+{{- if .Values.audit.enabled }}
+  ✓ Audit Service
+{{- end }}
+{{- if .Values.postgres.enabled }}
+  ✓ PostgreSQL Database
+{{- end }}
+{{- if .Values.redpanda.enabled }}
+  ✓ Redpanda (Kafka)
+{{- end }}
+
+To check the status of your deployment:
+  kubectl get pods -n {{ include "taskgpt-phase5.namespace" . }}
+
+To view logs:
+  kubectl logs -l app.kubernetes.io/instance={{ .Release.Name }} -n {{ include "taskgpt-phase5.namespace" . }} --tail=100 -f
+
+For more information, visit the chart repository:
+  {{ .Chart.Home }}

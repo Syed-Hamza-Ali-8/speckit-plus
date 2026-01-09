@@ -1,13 +1,19 @@
 from sqlmodel import create_engine, Session
-from sqlalchemy import URL
 import os
 from typing import Generator
 
-# Database configuration
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://user:password@localhost:5432/todo_phase5")
+# Database configuration - use SQLite for local development
+# For production with Neon, set DATABASE_URL with asyncpg driver
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./phase5.db")
 
-# For testing purposes, you might want to use an in-memory SQLite database
-# DATABASE_URL = "sqlite:///./test.db"
+# For PostgreSQL, use psycopg2 or asyncpg
+# If DATABASE_URL starts with postgresql://, ensure psycopg2 is installed
+if DATABASE_URL.startswith("postgresql"):
+    try:
+        import psycopg2
+    except ImportError:
+        # Fallback to asyncpg if psycopg2 not available
+        DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
 
 # Create the database engine
 engine = create_engine(DATABASE_URL, echo=True)

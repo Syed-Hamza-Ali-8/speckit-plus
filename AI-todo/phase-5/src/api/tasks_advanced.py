@@ -5,7 +5,7 @@ from datetime import datetime, date
 from uuid import UUID
 import json
 
-from ..models.task_models import (
+from models.task_models import (
     Task,
     TaskUpdate,
     TaskRead,
@@ -17,7 +17,7 @@ from ..models.task_models import (
     TaskSearchRequest,
     TaskSearchResponse
 )
-from ..config.database import get_session
+from config.database import get_session
 
 
 router = APIRouter(prefix="", tags=["advanced-tasks"])
@@ -211,11 +211,11 @@ def create_user_tag(
 def search_tasks(
     user_id: UUID,
     query: str = Query(..., min_length=1),
-    status_filter: Optional[str] = Query(None, regex="^(all|pending|completed)$"),
-    priority: Optional[PriorityLevel] = None,
-    tags: List[str] = Query([]),
-    due_before: Optional[date] = None,
-    due_after: Optional[date] = None,
+    status_filter: str | None = Query(None, regex="^(all|pending|completed)$"),
+    priority: PriorityLevel | None = None,
+    tags: list[str] = Query([]),
+    due_before: date | None = None,
+    due_after: date | None = None,
     sort_by: str = Query("created_at", regex="^(created_at|title|due_date|priority)$"),
     order: str = Query("desc", regex="^(asc|desc)$"),
     page: int = Query(1, ge=1),
@@ -312,11 +312,11 @@ def search_tasks(
 @router.get("/users/{user_id}/tasks/filter", response_model=List[TaskRead])
 def filter_tasks(
     user_id: UUID,
-    status: Optional[str] = Query(None, regex="^(all|pending|completed)$"),
-    priority: Optional[PriorityLevel] = None,
-    tags: List[str] = Query([]),
-    due_before: Optional[date] = None,
-    due_after: Optional[date] = None,
+    status: str | None = Query(None, regex="^(all|pending|completed)$"),
+    priority: PriorityLevel | None = None,
+    tags: list[str] = Query([]),
+    due_before: date | None = None,
+    due_after: date | None = None,
     session: Session = Depends(get_session)
 ):
     """

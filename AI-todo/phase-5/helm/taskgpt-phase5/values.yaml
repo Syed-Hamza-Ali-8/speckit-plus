@@ -1,0 +1,264 @@
+# Default values for taskgpt-phase5
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Global settings
+global:
+  nameOverride: ""
+  fullnameOverride: ""
+
+# Application metadata
+app:
+  name: taskgpt-phase5
+  version: "1.0.0"
+  environment: development
+
+# Namespace
+namespace:
+  create: true
+  name: taskgpt
+
+# ConfigMap settings
+config:
+  kafkaBootstrapServers: "d5f34j26d7soh80h0jk0.any.us-central1.gc.prd.cloud.redpanda.com:9092"
+  kafkaTopics:
+    taskEvents: "task-events"
+    reminders: "reminders"
+    updates: "task-updates"
+  logLevel: "INFO"
+  dapr:
+    logLevel: "info"
+    enableMtls: false
+
+# Secrets (should be overridden in production via external secrets)
+secrets:
+  postgres:
+    connectionString: "postgresql://username:password@host:5432/database?sslmode=require"
+  kafka:
+    username: "ai-todo"
+    password: "llPtLEXkTNYRLZ8FG4n2DbV0kk9SXT"
+    brokers: "d5f34j26d7soh80h0jk0.any.us-central1.gc.prd.cloud.redpanda.com:9092"
+  openai:
+    apiKey: "sk-your-openai-api-key"
+
+# PostgreSQL configuration
+postgres:
+  enabled: true
+  image:
+    repository: postgres
+    tag: "16-alpine"
+    pullPolicy: IfNotPresent
+  persistence:
+    enabled: true
+    size: 5Gi
+    storageClass: ""
+  env:
+    user: postgres
+    password: postgres
+    database: todo
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  service:
+    type: ClusterIP
+    port: 5432
+
+# Redpanda configuration
+redpanda:
+  enabled: true
+  image:
+    repository: redpandadata/redpanda
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  config:
+    smp: "1"
+    memory: "512M"
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "500m"
+    limits:
+      memory: "1Gi"
+      cpu: "1000m"
+  service:
+    type: ClusterIP
+    ports:
+      kafka: 9092
+      schemaRegistry: 8081
+      restProxy: 8082
+
+# Backend service configuration
+backend:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: todo-backend
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 8000
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  dapr:
+    enabled: true
+    appId: "todo-backend"
+    appPort: "8000"
+    logLevel: "info"
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  healthCheck:
+    enabled: true
+    path: "/health"
+    initialDelaySeconds: 30
+    periodSeconds: 10
+
+# Notification service configuration
+notification:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: todo-notification
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+  dapr:
+    enabled: true
+    appId: "todo-notification"
+    logLevel: "info"
+
+# Recurring task service configuration
+recurring:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: todo-recurring
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+  dapr:
+    enabled: true
+    appId: "todo-recurring"
+    logLevel: "info"
+
+# Audit service configuration
+audit:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: todo-audit
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+  dapr:
+    enabled: true
+    appId: "todo-audit"
+    logLevel: "info"
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+    nginx.ingress.kubernetes.io/limit-rps: "100"
+  hosts:
+    - host: api.todo.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  # tls:
+  #   - secretName: todo-tls-secret
+  #     hosts:
+  #       - api.yourdomain.com
+
+# Dapr configuration
+dapr:
+  enabled: true
+  config:
+    name: dapr-config
+    tracing:
+      enabled: true
+      samplingRate: "1"
+      zipkinEndpoint: "http://zipkin.default.svc.cluster.local:9411/api/v2/spans"
+    metrics:
+      enabled: true
+    mtls:
+      enabled: false
+  components:
+    kafkaPubsub: true
+    statestore: true
+    reminderCron: true
+    secrets: true
+
+# Image pull secrets (for private registries)
+imagePullSecrets: []
+# - name: regcred
+
+# Service account
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# Pod annotations
+podAnnotations: {}
+
+# Pod security context
+podSecurityContext:
+  fsGroup: 1000
+
+# Security context
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false
+  allowPrivilegeEscalation: false
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity
+affinity: {}

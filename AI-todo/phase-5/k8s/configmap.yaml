@@ -1,0 +1,36 @@
+# ConfigMap for shared configuration across services
+# For Redpanda Cloud, use the external broker URL
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: todo-config
+  namespace: taskgpt
+data:
+  # Kafka/Redpanda configuration
+  # For LOCAL development with in-cluster Redpanda:
+  # KAFKA_BOOTSTRAP_SERVERS: "redpanda.taskgpt.svc.cluster.local:9092"
+
+  # For Redpanda Cloud (production):
+  KAFKA_BOOTSTRAP_SERVERS: "d5f34j26d7soh80h0jk0.any.us-central1.gc.prd.cloud.redpanda.com:9092"
+
+  # Kafka topics
+  KAFKA_TOPIC_TASK_EVENTS: "task-events"
+  KAFKA_TOPIC_REMINDERS: "reminders"
+  KAFKA_TOPIC_UPDATES: "task-updates"
+
+  # Kafka authentication (set via secrets, referenced here)
+  KAFKA_SECURITY_PROTOCOL: "SASL_SSL"
+  KAFKA_SASL_MECHANISM: "SCRAM-SHA-256"
+
+  # Service configuration
+  LOG_LEVEL: "INFO"
+  ENVIRONMENT: "production"
+
+  # Dapr configuration
+  DAPR_LOG_LEVEL: "info"
+  DAPR_ENABLE_MTLS: "false"
+
+  # Application settings
+  APP_NAME: "TaskGPT Phase V"
+  API_VERSION: "v1"

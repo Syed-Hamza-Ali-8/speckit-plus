@@ -1,0 +1,20 @@
+{{- if .Values.backend.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "taskgpt-phase5.fullname" . }}-backend
+  namespace: {{ include "taskgpt-phase5.namespace" . }}
+  labels:
+    {{- include "taskgpt-phase5.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+spec:
+  type: {{ .Values.backend.service.type }}
+  ports:
+  - port: {{ .Values.backend.service.port }}
+    targetPort: {{ .Values.backend.service.targetPort }}
+    protocol: TCP
+    name: http
+  selector:
+    {{- include "taskgpt-phase5.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+{{- end }}

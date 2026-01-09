@@ -1,0 +1,73 @@
+# Dapr State Store Component using PostgreSQL
+# This component enables stateful operations without direct DB coupling
+# Usage: Store conversation state, cache task data, session management
+
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: statestore
+  namespace: taskgpt
+spec:
+  type: state.postgresql
+  version: v1
+  metadata:
+    # Connection string for Neon PostgreSQL
+    # Format: host=HOST user=USER password=PASSWORD dbname=DBNAME port=5432 sslmode=require
+    - name: connectionString
+      secretKeyRef:
+        name: postgres-secrets
+        key: connectionString
+
+    # Table name for state storage
+    - name: tableName
+      value: "dapr_state"
+
+    # Metadata table for tracking
+    - name: metadataTableName
+      value: "dapr_metadata"
+
+    # Cleanup interval for expired state
+    - name: cleanupIntervalInSeconds
+      value: "3600"
+
+    # Timeout for database operations
+    - name: timeout
+      value: "20s"
+
+    # Maximum number of retries
+    - name: maxRetries
+      value: "3"
+
+    # Retry backoff in milliseconds
+    - name: retryBackoff
+      value: "500"
+
+---
+# Alternative: For local development without secrets
+# apiVersion: dapr.io/v1alpha1
+# kind: Component
+# metadata:
+#   name: statestore
+#   namespace: default
+# spec:
+#   type: state.postgresql
+#   version: v1
+#   metadata:
+#     - name: connectionString
+#       value: "host=postgres user=postgres password=postgres dbname=todo port=5432"
+#     - name: tableName
+#       value: "dapr_state"
+#     - name: metadataTableName
+#       value: "dapr_metadata"
+
+---
+# SQL Schema for state store (auto-created by Dapr):
+# CREATE TABLE IF NOT EXISTS dapr_state (
+#   key text NOT NULL PRIMARY KEY,
+#   value jsonb NOT NULL,
+#   isbinary boolean NOT NULL,
+#   insertdate TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+#   updatedate TIMESTAMP WITH TIME ZONE NULL,
+#   eTag VARCHAR(36) NOT NULL,
+#   expiredate TIMESTAMP WITH TIME ZONE NULL
+# );
