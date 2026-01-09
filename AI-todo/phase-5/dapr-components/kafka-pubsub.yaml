@@ -11,9 +11,11 @@ spec:
   type: pubsub.kafka
   version: v1
   metadata:
-    # Redpanda Cloud broker addresses
+    # Redpanda Cloud broker addresses (loaded from Kubernetes secret)
     - name: brokers
-      value: "d5f34j26d7soh80h0jk0.any.us-central1.gc.prd.cloud.redpanda.com:9092"
+      secretKeyRef:
+        name: kafka-secrets
+        key: brokers
 
     # Consumer group for this service
     - name: consumerGroup
