@@ -61,18 +61,18 @@ services:
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/todo
       # For LOCAL Redpanda:
       - KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
-      # For Redpanda Cloud (uncomment and set these):
-      # - KAFKA_BOOTSTRAP_SERVERS=d5f34j26d7soh80h0jk0.any.us-central1.gc.prd.cloud.redpanda.com:9092
-      # - KAFKA_SASL_USERNAME=ai-todo
-      # - KAFKA_SASL_PASSWORD=llPtLEXkTNYRLZ8FG4n2DbV0kk9SXT
+      # For Redpanda Cloud (uncomment and set these in .env):
+      # - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS}
+      # - KAFKA_SASL_USERNAME=${KAFKA_SASL_USERNAME}
+      # - KAFKA_SASL_PASSWORD=${KAFKA_SASL_PASSWORD}
       # - KAFKA_SECURITY_PROTOCOL=SASL_SSL
       # - KAFKA_SASL_MECHANISM=SCRAM-SHA-256
       - DAPR_HTTP_PORT=3500
       - DAPR_GRPC_PORT=50001
-      # OpenAI Configuration for Chatbot
-      - OPENAI_API_KEY=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
-      - OPENAI_BASE_URL=https://openrouter.ai/api/v1
-      - OPENAI_MODEL=openai/gpt-4o-mini
+      # OpenAI Configuration for Chatbot (loaded from .env file)
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://openrouter.ai/api/v1}
+      - OPENAI_MODEL=${OPENAI_MODEL:-openai/gpt-4o-mini}
     depends_on:
       postgres:
         condition: service_healthy
@@ -96,10 +96,12 @@ services:
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/todo
       - KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
-      # For Redpanda Cloud (uncomment and set these):
-      # - KAFKA_BOOTSTRAP_SERVERS=d5f34j26d7soh80h0jk0.any.us-central1.gc.prd.cloud.redpanda.com:9092
-      # - KAFKA_SASL_USERNAME=ai-todo
-      # - KAFKA_SASL_PASSWORD=llPtLEXkTNYRLZ8FG4n2DbV0kk9SXT
+      # For Redpanda Cloud (uncomment and set these in .env):
+      # - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS}
+      # - KAFKA_SASL_USERNAME=${KAFKA_SASL_USERNAME}
+      # - KAFKA_SASL_PASSWORD=${KAFKA_SASL_PASSWORD}
+      # - KAFKA_SECURITY_PROTOCOL=SASL_SSL
+      # - KAFKA_SASL_MECHANISM=SCRAM-SHA-256
       - DAPR_HTTP_PORT=3501
       - DAPR_GRPC_PORT=50002
     depends_on:
@@ -120,10 +122,12 @@ services:
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/todo
       - KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
-      # For Redpanda Cloud (uncomment and set these):
-      # - KAFKA_BOOTSTRAP_SERVERS=d5f34j26d7soh80h0jk0.any.us-central1.gc.prd.cloud.redpanda.com:9092
-      # - KAFKA_SASL_USERNAME=ai-todo
-      # - KAFKA_SASL_PASSWORD=llPtLEXkTNYRLZ8FG4n2DbV0kk9SXT
+      # For Redpanda Cloud (uncomment and set these in .env):
+      # - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS}
+      # - KAFKA_SASL_USERNAME=${KAFKA_SASL_USERNAME}
+      # - KAFKA_SASL_PASSWORD=${KAFKA_SASL_PASSWORD}
+      # - KAFKA_SECURITY_PROTOCOL=SASL_SSL
+      # - KAFKA_SASL_MECHANISM=SCRAM-SHA-256
       - DAPR_HTTP_PORT=3502
       - DAPR_GRPC_PORT=50003
     depends_on:
@@ -144,10 +148,12 @@ services:
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/todo
       - KAFKA_BOOTSTRAP_SERVERS=redpanda:9092
-      # For Redpanda Cloud (uncomment and set these):
-      # - KAFKA_BOOTSTRAP_SERVERS=d5f34j26d7soh80h0jk0.any.us-central1.gc.prd.cloud.redpanda.com:9092
-      # - KAFKA_SASL_USERNAME=ai-todo
-      # - KAFKA_SASL_PASSWORD=llPtLEXkTNYRLZ8FG4n2DbV0kk9SXT
+      # For Redpanda Cloud (uncomment and set these in .env):
+      # - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS}
+      # - KAFKA_SASL_USERNAME=${KAFKA_SASL_USERNAME}
+      # - KAFKA_SASL_PASSWORD=${KAFKA_SASL_PASSWORD}
+      # - KAFKA_SECURITY_PROTOCOL=SASL_SSL
+      # - KAFKA_SASL_MECHANISM=SCRAM-SHA-256
       - DAPR_HTTP_PORT=3503
       - DAPR_GRPC_PORT=50004
     depends_on:
