@@ -154,3 +154,79 @@ def get_current_user(
         "is_active": user.is_active,
         "created_at": user.created_at.isoformat() if user.created_at else None,
     }
+
+
+@router.patch("/me")
+def update_current_user(
+    update_data: dict,
+    authorization: Optional[str] = Header(None),
+    session: Session = Depends(get_session)
+):
+    """Update current authenticated user's profile.
+
+    Allows updating the user's name.
+    Validates JWT token from Authorization header.
+    """
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing or invalid authorization header",
+        )
+
+    # Extract token from "Bearer <token>"
+    token = authorization.split(" ")[1]
+
+    # Decode and validate token
+    payload = decode_access_token(token)
+    if payload is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+        )
+
+    # Get user_id from token
+    user_id_str = payload.get("sub")
+    if not user_id_str:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token payload",
+        )
+
+    try:
+        user_id = UUID(user_id_str)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid user ID in token",
+        )
+
+    # Fetch user from database
+    user = get_user_by_id(session, user_id)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User account is inactive",
+        )
+
+    # Update user fields
+    if "name" in update_data and update_data["name"] is not None:
+        user.name = update_data["name"]
+
+    # Save changes
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+
+    return {
+        "id": str(user.id),
+        "email": user.email,
+        "name": user.name,
+        "is_active": user.is_active,
+        "created_at": user.created_at.isoformat() if user.created_at else None,
+    }

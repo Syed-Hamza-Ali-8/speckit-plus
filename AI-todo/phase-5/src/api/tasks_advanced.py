@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Header
 from sqlmodel import Session, select, func, or_, and_
 from typing import List, Optional
 from datetime import datetime, date
@@ -18,26 +18,70 @@ from models.task_models import (
     TaskSearchResponse
 )
 from config.database import get_session
+from core.security import decode_access_token
 
 
 router = APIRouter(prefix="", tags=["advanced-tasks"])
+
+
+def get_authenticated_user_id(authorization: Optional[str]) -> UUID:
+    """Helper function to extract and validate user_id from JWT token."""
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required"
+        )
+
+    token = authorization.split(" ")[1]
+    payload = decode_access_token(token)
+    if payload is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token"
+        )
+
+    user_id_str = payload.get("sub")
+    if not user_id_str:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token payload"
+        )
+
+    try:
+        return UUID(user_id_str)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid user ID in token"
+        )
 
 
 @router.put("/tasks/{task_id}/priority")
 def set_task_priority(
     task_id: UUID,
     priority: PriorityLevel,
+    authorization: Optional[str] = Header(None),
     session: Session = Depends(get_session)
 ):
     """
     Set the priority level for a task.
+    Requires authentication - users can only modify their own tasks.
     """
     try:
+        authenticated_user_id = get_authenticated_user_id(authorization)
+
         task = session.get(Task, task_id)
         if not task:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Task not found"
+            )
+
+        # Verify the task belongs to the authenticated user
+        if task.user_id != authenticated_user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied"
             )
 
         task.priority = priority
@@ -65,17 +109,28 @@ def set_task_priority(
 def add_task_tags(
     task_id: UUID,
     tags: List[str],
+    authorization: Optional[str] = Header(None),
     session: Session = Depends(get_session)
 ):
     """
     Add tags to a task.
+    Requires authentication - users can only modify their own tasks.
     """
     try:
+        authenticated_user_id = get_authenticated_user_id(authorization)
+
         task = session.get(Task, task_id)
         if not task:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Task not found"
+            )
+
+        # Verify the task belongs to the authenticated user
+        if task.user_id != authenticated_user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied"
             )
 
         # Get existing tags and add new ones
@@ -108,17 +163,28 @@ def add_task_tags(
 def remove_task_tags(
     task_id: UUID,
     tags: List[str],
+    authorization: Optional[str] = Header(None),
     session: Session = Depends(get_session)
 ):
     """
     Remove tags from a task.
+    Requires authentication - users can only modify their own tasks.
     """
     try:
+        authenticated_user_id = get_authenticated_user_id(authorization)
+
         task = session.get(Task, task_id)
         if not task:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Task not found"
+            )
+
+        # Verify the task belongs to the authenticated user
+        if task.user_id != authenticated_user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied"
             )
 
         # Remove specified tags
@@ -149,14 +215,38 @@ def remove_task_tags(
 
 @router.get("/users/{user_id}/tags", response_model=List[TagRead])
 def get_user_tags(
-    user_id: UUID,
+    user_id: str,
+    authorization: Optional[str] = Header(None),
     session: Session = Depends(get_session)
 ):
     """
     Get all tags for a user.
+    Use 'me' as user_id to get tags for the authenticated user.
+    Requires authentication.
     """
     try:
-        statement = select(Tag).where(Tag.user_id == user_id)
+        authenticated_user_id = get_authenticated_user_id(authorization)
+
+        # Handle "me" as a special case for authenticated user
+        if user_id == "me":
+            resolved_user_id = authenticated_user_id
+        else:
+            try:
+                resolved_user_id = UUID(user_id)
+            except ValueError:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid user ID format"
+                )
+
+            # Verify the user can only access their own tags
+            if resolved_user_id != authenticated_user_id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Access denied"
+                )
+
+        statement = select(Tag).where(Tag.user_id == resolved_user_id)
         user_tags = session.exec(statement).all()
         return user_tags
 
@@ -169,17 +259,41 @@ def get_user_tags(
 
 @router.post("/users/{user_id}/tags", response_model=TagRead)
 def create_user_tag(
-    user_id: UUID,
+    user_id: str,
     tag: TagCreate,
+    authorization: Optional[str] = Header(None),
     session: Session = Depends(get_session)
 ):
     """
     Create a new tag for a user.
+    Use 'me' as user_id to create tags for the authenticated user.
+    Requires authentication.
     """
     try:
+        authenticated_user_id = get_authenticated_user_id(authorization)
+
+        # Handle "me" as a special case for authenticated user
+        if user_id == "me":
+            resolved_user_id = authenticated_user_id
+        else:
+            try:
+                resolved_user_id = UUID(user_id)
+            except ValueError:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid user ID format"
+                )
+
+            # Verify the user can only create tags for themselves
+            if resolved_user_id != authenticated_user_id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Access denied"
+                )
+
         # Check if tag already exists for this user
         statement = select(Tag).where(
-            Tag.user_id == user_id,
+            Tag.user_id == resolved_user_id,
             Tag.name == tag.name
         )
         existing_tag = session.exec(statement).first()
@@ -209,7 +323,7 @@ def create_user_tag(
 
 @router.get("/users/{user_id}/tasks/search", response_model=TaskSearchResponse)
 def search_tasks(
-    user_id: UUID,
+    user_id: str,
     query: str = Query(..., min_length=1),
     status_filter: str | None = Query(None, regex="^(all|pending|completed)$"),
     priority: PriorityLevel | None = None,
@@ -220,14 +334,38 @@ def search_tasks(
     order: str = Query("desc", regex="^(asc|desc)$"),
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
+    authorization: Optional[str] = Header(None),
     session: Session = Depends(get_session)
 ):
     """
     Search tasks with various filters and sorting options.
+    Use 'me' as user_id to search tasks for the authenticated user.
+    Requires authentication.
     """
     try:
+        authenticated_user_id = get_authenticated_user_id(authorization)
+
+        # Handle "me" as a special case for authenticated user
+        if user_id == "me":
+            resolved_user_id = authenticated_user_id
+        else:
+            try:
+                resolved_user_id = UUID(user_id)
+            except ValueError:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid user ID format"
+                )
+
+            # Verify the user can only search their own tasks
+            if resolved_user_id != authenticated_user_id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Access denied"
+                )
+
         # Build the query with filters
-        statement = select(Task).where(Task.user_id == user_id)
+        statement = select(Task).where(Task.user_id == resolved_user_id)
 
         # Apply status filter
         if status_filter and status_filter != "all":
@@ -311,19 +449,43 @@ def search_tasks(
 
 @router.get("/users/{user_id}/tasks/filter", response_model=List[TaskRead])
 def filter_tasks(
-    user_id: UUID,
+    user_id: str,
     status: str | None = Query(None, regex="^(all|pending|completed)$"),
     priority: PriorityLevel | None = None,
     tags: list[str] = Query([]),
     due_before: date | None = None,
     due_after: date | None = None,
+    authorization: Optional[str] = Header(None),
     session: Session = Depends(get_session)
 ):
     """
     Filter tasks by various criteria.
+    Use 'me' as user_id to filter tasks for the authenticated user.
+    Requires authentication.
     """
     try:
-        statement = select(Task).where(Task.user_id == user_id)
+        authenticated_user_id = get_authenticated_user_id(authorization)
+
+        # Handle "me" as a special case for authenticated user
+        if user_id == "me":
+            resolved_user_id = authenticated_user_id
+        else:
+            try:
+                resolved_user_id = UUID(user_id)
+            except ValueError:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid user ID format"
+                )
+
+            # Verify the user can only filter their own tasks
+            if resolved_user_id != authenticated_user_id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Access denied"
+                )
+
+        statement = select(Task).where(Task.user_id == resolved_user_id)
 
         # Apply filters
         if status and status != "all":
@@ -358,16 +520,40 @@ def filter_tasks(
 
 @router.get("/users/{user_id}/tasks/sort", response_model=List[TaskRead])
 def sort_tasks(
-    user_id: UUID,
+    user_id: str,
     sort_by: str = Query("created_at", regex="^(created_at|title|due_date|priority)$"),
     order: str = Query("desc", regex="^(asc|desc)$"),
+    authorization: Optional[str] = Header(None),
     session: Session = Depends(get_session)
 ):
     """
     Sort tasks by various criteria.
+    Use 'me' as user_id to sort tasks for the authenticated user.
+    Requires authentication.
     """
     try:
-        statement = select(Task).where(Task.user_id == user_id)
+        authenticated_user_id = get_authenticated_user_id(authorization)
+
+        # Handle "me" as a special case for authenticated user
+        if user_id == "me":
+            resolved_user_id = authenticated_user_id
+        else:
+            try:
+                resolved_user_id = UUID(user_id)
+            except ValueError:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid user ID format"
+                )
+
+            # Verify the user can only sort their own tasks
+            if resolved_user_id != authenticated_user_id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Access denied"
+                )
+
+        statement = select(Task).where(Task.user_id == resolved_user_id)
 
         # Apply sorting
         if sort_by == "created_at":

@@ -182,17 +182,56 @@ def get_recurring_task_patterns(
 @router.get("/recurring-tasks/{pattern_id}", response_model=RecurringTaskPatternRead)
 def get_recurring_task_pattern(
     pattern_id: UUID,
+    authorization: Optional[str] = Header(None),
     session: Session = Depends(get_session)
 ):
     """
     Get a specific recurring task pattern by ID.
+    Requires authentication - users can only access their own patterns.
     """
     try:
+        # Extract user_id from JWT token
+        if not authorization or not authorization.startswith("Bearer "):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required"
+            )
+
+        token = authorization.split(" ")[1]
+        payload = decode_access_token(token)
+        if payload is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired token"
+            )
+
+        user_id_str = payload.get("sub")
+        if not user_id_str:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token payload"
+            )
+
+        try:
+            authenticated_user_id = UUID(user_id_str)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid user ID in token"
+            )
+
         recurring_pattern = session.get(RecurringTaskPattern, pattern_id)
         if not recurring_pattern:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Recurring task pattern not found"
+            )
+
+        # Verify the pattern belongs to the authenticated user
+        if recurring_pattern.user_id != authenticated_user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied"
             )
 
         return recurring_pattern
@@ -210,17 +249,56 @@ def get_recurring_task_pattern(
 def update_recurring_task_pattern(
     pattern_id: UUID,
     recurring_pattern_update: RecurringTaskPatternUpdate,
+    authorization: Optional[str] = Header(None),
     session: Session = Depends(get_session)
 ):
     """
     Update a recurring task pattern.
+    Requires authentication - users can only update their own patterns.
     """
     try:
+        # Extract user_id from JWT token
+        if not authorization or not authorization.startswith("Bearer "):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required"
+            )
+
+        token = authorization.split(" ")[1]
+        payload = decode_access_token(token)
+        if payload is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired token"
+            )
+
+        user_id_str = payload.get("sub")
+        if not user_id_str:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token payload"
+            )
+
+        try:
+            authenticated_user_id = UUID(user_id_str)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid user ID in token"
+            )
+
         db_recurring_pattern = session.get(RecurringTaskPattern, pattern_id)
         if not db_recurring_pattern:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Recurring task pattern not found"
+            )
+
+        # Verify the pattern belongs to the authenticated user
+        if db_recurring_pattern.user_id != authenticated_user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied"
             )
 
         # Update the pattern with the provided values
@@ -247,18 +325,57 @@ def update_recurring_task_pattern(
 @router.delete("/recurring-tasks/{pattern_id}")
 def delete_recurring_task_pattern(
     pattern_id: UUID,
+    authorization: Optional[str] = Header(None),
     session: Session = Depends(get_session)
 ):
     """
     Delete a recurring task pattern.
     This does NOT delete the tasks that were generated from this pattern.
+    Requires authentication - users can only delete their own patterns.
     """
     try:
+        # Extract user_id from JWT token
+        if not authorization or not authorization.startswith("Bearer "):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required"
+            )
+
+        token = authorization.split(" ")[1]
+        payload = decode_access_token(token)
+        if payload is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired token"
+            )
+
+        user_id_str = payload.get("sub")
+        if not user_id_str:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token payload"
+            )
+
+        try:
+            authenticated_user_id = UUID(user_id_str)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid user ID in token"
+            )
+
         db_recurring_pattern = session.get(RecurringTaskPattern, pattern_id)
         if not db_recurring_pattern:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Recurring task pattern not found"
+            )
+
+        # Verify the pattern belongs to the authenticated user
+        if db_recurring_pattern.user_id != authenticated_user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied"
             )
 
         session.delete(db_recurring_pattern)
@@ -279,18 +396,57 @@ def delete_recurring_task_pattern(
 @router.post("/recurring-tasks/{pattern_id}/generate-occurrence")
 def generate_next_occurrence(
     pattern_id: UUID,
+    authorization: Optional[str] = Header(None),
     session: Session = Depends(get_session)
 ):
     """
     Manually generate the next occurrence for a recurring task pattern.
     This is useful for testing or when the automated system needs to be triggered.
+    Requires authentication - users can only generate occurrences for their own patterns.
     """
     try:
+        # Extract user_id from JWT token
+        if not authorization or not authorization.startswith("Bearer "):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Authentication required"
+            )
+
+        token = authorization.split(" ")[1]
+        payload = decode_access_token(token)
+        if payload is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired token"
+            )
+
+        user_id_str = payload.get("sub")
+        if not user_id_str:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token payload"
+            )
+
+        try:
+            authenticated_user_id = UUID(user_id_str)
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid user ID in token"
+            )
+
         recurring_pattern = session.get(RecurringTaskPattern, pattern_id)
         if not recurring_pattern:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Recurring task pattern not found"
+            )
+
+        # Verify the pattern belongs to the authenticated user
+        if recurring_pattern.user_id != authenticated_user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied"
             )
 
         # Create the next occurrence based on the pattern

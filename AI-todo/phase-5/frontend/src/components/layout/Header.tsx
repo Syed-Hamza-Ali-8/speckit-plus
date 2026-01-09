@@ -33,9 +33,9 @@ export function Header(_props: HeaderProps) {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   // Use real user data or fallback
-  const displayName = user?.display_name || user?.email?.split('@')[0] || 'User';
+  const displayName = user?.name || user?.email?.split('@')[0] || 'User';
   const userEmail = user?.email || 'user@example.com';
-  const avatarInitial = user?.display_name?.charAt(0) || user?.email?.charAt(0) || 'U';
+  const avatarInitial = user?.name?.charAt(0) || user?.email?.charAt(0) || 'U';
 
   const isAuthPage =
     location.pathname === ROUTES.LOGIN || location.pathname === ROUTES.REGISTER;

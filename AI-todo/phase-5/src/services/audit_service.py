@@ -10,6 +10,7 @@ import logging
 import os
 from datetime import datetime
 from typing import Dict, Any
+from uuid import uuid4
 
 from aiokafka import AIOKafkaConsumer
 from sqlmodel import create_engine, Session, SQLModel
@@ -70,11 +71,12 @@ class AuditService:
             # Create audit entry in database
             with Session(engine) as session:
                 audit_entry_query = text("""
-                    INSERT INTO taskhistory (task_id, user_id, action, previous_state, new_state, created_at)
-                    VALUES (:task_id, :user_id, :action, :previous_state, :new_state, :timestamp)
+                    INSERT INTO taskhistory (id, task_id, user_id, action, previous_state, new_state, created_at)
+                    VALUES (:id, :task_id, :user_id, :action, :previous_state, :new_state, :timestamp)
                 """)
 
                 session.execute(audit_entry_query, {
+                    "id": str(uuid4()),
                     "task_id": task_id,
                     "user_id": user_id,
                     "action": event_type,

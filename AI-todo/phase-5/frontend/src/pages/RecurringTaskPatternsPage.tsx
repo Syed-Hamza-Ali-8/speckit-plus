@@ -4,13 +4,12 @@ import { toast } from 'sonner';
 import { GlassButton } from '@/components/ui/GlassButton';
 import { cn } from '@/lib/utils';
 import { RecurringTaskPatternModal } from '@/components/tasks/RecurringTaskPatternModal';
-import { DeleteTaskDialog } from '@/components/tasks/DeleteTaskDialog';
-import { useGetRecurringTaskPatternsQuery, useDeleteRecurringTaskPatternMutation } from '@/services/taskApi';
+import { DeleteRecurringTaskPatternDialog } from '@/components/tasks/DeleteRecurringTaskPatternDialog';
+import { useGetRecurringTaskPatternsQuery } from '@/services/taskApi';
 import type { RecurringTaskPattern } from '@/types/task';
 
 export function RecurringTaskPatternsPage() {
   const { data: patterns, isLoading, refetch } = useGetRecurringTaskPatternsQuery();
-  const [deletePattern] = useDeleteRecurringTaskPatternMutation();
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editModalPattern, setEditModalPattern] = useState<RecurringTaskPattern | null>(null);
@@ -25,20 +24,6 @@ export function RecurringTaskPatternsPage() {
   const handleDelete = useCallback((pattern: RecurringTaskPattern) => {
     setDeleteDialogPattern(pattern);
   }, []);
-
-  const handleConfirmDelete = useCallback(async () => {
-    if (!deleteDialogPattern) return;
-
-    try {
-      await deletePattern(deleteDialogPattern.id).unwrap();
-      toast.success('Recurring task pattern deleted!');
-      setDeleteDialogPattern(null);
-      refetch();
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to delete pattern';
-      toast.error(errorMessage);
-    }
-  }, [deleteDialogPattern, deletePattern, refetch]);
 
   const handleCloseCreateModal = useCallback(() => {
     setIsCreateModalOpen(false);
@@ -221,12 +206,11 @@ export function RecurringTaskPatternsPage() {
             onSuccess={handleEditSuccess}
           />
 
-          <DeleteTaskDialog
+          <DeleteRecurringTaskPatternDialog
             open={isDeleteDialogOpen}
             onClose={handleCloseDeleteDialog}
-            task={deleteDialogPattern as any} // Type assertion for dialog component
+            pattern={deleteDialogPattern}
             onSuccess={handleDeleteSuccess}
-            customMessage="Are you sure you want to delete this recurring task pattern? This will not delete existing tasks generated from this pattern."
           />
         </div>
       </div>

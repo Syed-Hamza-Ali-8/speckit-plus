@@ -38,16 +38,21 @@ export function ProfilePage() {
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      firstName: user?.first_name || '',
-      lastName: user?.last_name || '',
+      firstName: '',
+      lastName: '',
     },
   });
 
   // Reset form when user data loads or when entering edit mode
   const handleEditClick = () => {
+    // Split the name into first and last name for editing
+    const nameParts = (user?.name || '').split(' ');
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || '';
+
     reset({
-      firstName: user?.first_name || '',
-      lastName: user?.last_name || '',
+      firstName,
+      lastName,
     });
     setIsEditing(true);
   };
@@ -59,9 +64,10 @@ export function ProfilePage() {
 
   const onSubmit = async (data: ProfileFormData) => {
     try {
+      // Combine first and last name into a single name field
+      const fullName = [data.firstName, data.lastName].filter(Boolean).join(' ');
       await updateProfile({
-        first_name: data.firstName || null,
-        last_name: data.lastName || null,
+        name: fullName || null,
       }).unwrap();
       toast.success('Profile updated successfully!');
       setIsEditing(false);
@@ -90,8 +96,9 @@ export function ProfilePage() {
   };
 
   // Get initials for avatar
-  const getInitials = (displayName: string) => {
-    return displayName
+  const getInitials = (name?: string) => {
+    if (!name) return 'U';
+    return name
       .split(' ')
       .map((n) => n[0])
       .join('')
@@ -190,21 +197,13 @@ export function ProfilePage() {
                         'shadow-premium'
                       )}
                     >
-                      {user.avatar_url ? (
-                        <img
-                          src={user.avatar_url}
-                          alt={user.display_name}
-                          className="w-full h-full rounded-full object-cover"
-                        />
-                      ) : (
-                        getInitials(user.display_name)
-                      )}
+                      {getInitials(user.name)}
                     </div>
 
                     {/* Name and email */}
                     <div>
                       <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                        {user.display_name}
+                        {user.name || 'User'}
                       </h2>
                       <div className="flex items-center gap-2 mt-1 text-sm text-gray-600 dark:text-gray-400">
                         <Mail className="w-4 h-4" />

@@ -153,13 +153,48 @@ async def get_tasks(
     sort: str = "created_at:desc",
     limit: int = 20,
     offset: int = 0,
+    authorization: Optional[str] = Header(None),
     session: Session = Depends(get_session)
 ):
     """
     Get all tasks with filtering, sorting, and pagination (Phase 2 compatible).
     Extended with advanced filtering options.
+    Requires JWT authentication - users can only see their own tasks.
     """
-    statement = select(Task)
+    from core.security import decode_access_token
+
+    # Extract and validate JWT token
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required"
+        )
+
+    token = authorization.split(" ")[1]
+    payload = decode_access_token(token)
+    if payload is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token"
+        )
+
+    user_id_str = payload.get("sub")
+    if not user_id_str:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token payload"
+        )
+
+    try:
+        authenticated_user_id = UUID(user_id_str)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid user ID in token"
+        )
+
+    # Filter tasks by authenticated user
+    statement = select(Task).where(Task.user_id == authenticated_user_id)
 
     if status_filter:
         statement = statement.where(Task.status == status_filter)
@@ -222,47 +257,43 @@ async def create_task(
     from models.user_models import User
     from core.security import decode_access_token
 
-    # Extract and validate JWT token
+    # Extract and validate JWT token - REQUIRED (no fallback for security)
     if not authorization or not authorization.startswith("Bearer "):
-        # Fallback to default user for backward compatibility
-        user_statement = select(User).limit(1)
-        user = session.exec(user_statement).first()
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication required"
-            )
-    else:
-        token = authorization.split(" ")[1]
-        payload = decode_access_token(token)
-        if payload is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid or expired token"
-            )
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required"
+        )
 
-        user_id_str = payload.get("sub")
-        if not user_id_str:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token payload"
-            )
+    token = authorization.split(" ")[1]
+    payload = decode_access_token(token)
+    if payload is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token"
+        )
 
-        try:
-            user_id = UUID(user_id_str)
-        except ValueError:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid user ID in token"
-            )
+    user_id_str = payload.get("sub")
+    if not user_id_str:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token payload"
+        )
 
-        # Get user from database
-        user = session.get(User, user_id)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="User not found"
-            )
+    try:
+        user_id = UUID(user_id_str)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid user ID in token"
+        )
+
+    # Get user from database
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
 
     task = Task(
         title=request.title,
@@ -312,16 +343,57 @@ async def create_task(
 @app.get("/tasks/{task_id}")
 async def get_task_by_id(
     task_id: UUID,
+    authorization: Optional[str] = Header(None),
     session: Session = Depends(get_session)
 ):
     """
     Get a specific task by ID (Phase 2 compatible).
+    Requires JWT authentication - users can only view their own tasks.
     """
+    from core.security import decode_access_token
+
+    # Extract and validate JWT token
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required"
+        )
+
+    token = authorization.split(" ")[1]
+    payload = decode_access_token(token)
+    if payload is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token"
+        )
+
+    user_id_str = payload.get("sub")
+    if not user_id_str:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token payload"
+        )
+
+    try:
+        authenticated_user_id = UUID(user_id_str)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid user ID in token"
+        )
+
     task = session.get(Task, task_id)
     if not task:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Task not found"
+        )
+
+    # Verify the task belongs to the authenticated user
+    if task.user_id != authenticated_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied"
         )
 
     return task
@@ -331,17 +403,58 @@ async def get_task_by_id(
 async def update_task(
     task_id: UUID,
     task_update: TaskUpdate,
+    authorization: Optional[str] = Header(None),
     session: Session = Depends(get_session)
 ):
     """
     Update a task by ID (Phase 2 compatible).
     Extended with advanced features.
+    Requires JWT authentication - users can only update their own tasks.
     """
+    from core.security import decode_access_token
+
+    # Extract and validate JWT token
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required"
+        )
+
+    token = authorization.split(" ")[1]
+    payload = decode_access_token(token)
+    if payload is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token"
+        )
+
+    user_id_str = payload.get("sub")
+    if not user_id_str:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token payload"
+        )
+
+    try:
+        authenticated_user_id = UUID(user_id_str)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid user ID in token"
+        )
+
     task = session.get(Task, task_id)
     if not task:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Task not found"
+        )
+
+    # Verify the task belongs to the authenticated user
+    if task.user_id != authenticated_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied"
         )
 
     # Update fields if provided (only update non-None values)
@@ -398,16 +511,57 @@ async def update_task(
 @app.delete("/tasks/{task_id}")
 async def delete_task(
     task_id: UUID,
+    authorization: Optional[str] = Header(None),
     session: Session = Depends(get_session)
 ):
     """
     Delete a task by ID (Phase 2 compatible).
+    Requires JWT authentication - users can only delete their own tasks.
     """
+    from core.security import decode_access_token
+
+    # Extract and validate JWT token
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required"
+        )
+
+    token = authorization.split(" ")[1]
+    payload = decode_access_token(token)
+    if payload is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token"
+        )
+
+    user_id_str = payload.get("sub")
+    if not user_id_str:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token payload"
+        )
+
+    try:
+        authenticated_user_id = UUID(user_id_str)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid user ID in token"
+        )
+
     task = session.get(Task, task_id)
     if not task:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Task not found"
+        )
+
+    # Verify the task belongs to the authenticated user
+    if task.user_id != authenticated_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied"
         )
 
     # Store task info before deletion

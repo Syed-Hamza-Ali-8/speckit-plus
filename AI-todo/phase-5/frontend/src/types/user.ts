@@ -9,12 +9,7 @@
 export interface User {
   id: string;
   email: string;
-  first_name: string | null;
-  last_name: string | null;
-  display_name: string;
-  avatar_url: string | null;
-  theme: 'light' | 'dark' | 'system';
-  email_notifications: boolean;
+  name: string;
   is_active: boolean;
   created_at: string;
 }
@@ -24,9 +19,7 @@ export interface User {
  * All fields are optional (partial update)
  */
 export interface UserUpdateRequest {
-  first_name?: string | null;
-  last_name?: string | null;
-  avatar_url?: string | null;
+  name?: string | null;
 }
 
 /**

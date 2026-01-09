@@ -85,9 +85,10 @@ async def chat_endpoint(
     session_store.add_message(session, user_message)
 
     # Get conversation history and clarification state from session
+    # Reduced from 20 to 8 messages to stay within OpenRouter free tier token limits
     conversation_history = [
         {"role": msg.role, "content": msg.content}
-        for msg in session.context.messages[-20:]  # Last 20 messages
+        for msg in session.context.messages[-8:]  # Last 8 messages
     ]
     awaiting_clarification = session.context.awaiting_clarification
 

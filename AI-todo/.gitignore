@@ -70,3 +70,12 @@ kubeconfig*
 
 # Minikube
 .minikube/
+# Test files
+**/test_*.py
+**/test_*.sh
+**/comprehensive_test.py
+**/final_test.py
+**/final_comprehensive_test.py
+**/verify_*.py
+**/*_test_results.md
+**/*_fix_*.md
