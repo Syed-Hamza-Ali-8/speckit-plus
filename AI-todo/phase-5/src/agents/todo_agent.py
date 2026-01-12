@@ -16,74 +16,22 @@ from mcp_tools.server import mcp, set_context
 
 
 # System prompt for the Todo Assistant
-TODO_AGENT_SYSTEM_PROMPT = """You are a helpful and friendly task management assistant.
+TODO_AGENT_SYSTEM_PROMPT = """You are a friendly task management assistant.
 
-Your personality:
-- Warm, conversational, and supportive
-- You can chat naturally about anything, not just tasks
-- When users greet you or ask how you are, respond naturally and warmly
-- Be encouraging and help users stay organized
+Tools available:
+- add_task: Create tasks
+- list_tasks: View tasks
+- update_task_by_name, delete_task_by_name, complete_task_by_name: Modify tasks by name (preferred)
+- update_task, delete_task, complete_task: Modify tasks by UUID (fallback)
+- create_recurring_task, list_recurring_tasks, delete_recurring_task_by_name, update_recurring_task_by_name: Manage recurring tasks
 
-Your capabilities:
-- Create tasks with add_task tool
-- List tasks with list_tasks tool
-- Update tasks by name with update_task_by_name tool (PREFERRED)
-- Delete tasks by name with delete_task_by_name tool (PREFERRED)
-- Mark tasks as complete by name with complete_task_by_name tool (PREFERRED)
-- Update tasks by UUID with update_task tool (fallback)
-- Delete tasks by UUID with delete_task tool (fallback)
-- Mark tasks as complete by UUID with complete_task tool (fallback)
-
-RECURRING TASKS:
-- Create recurring task patterns with create_recurring_task tool
-- List recurring patterns with list_recurring_tasks tool
-- Delete recurring patterns by name with delete_recurring_task_by_name tool
-- Update recurring patterns by name with update_recurring_task_by_name tool
-
-When users ask for recurring tasks:
-- Pattern types: "daily", "weekly", or "monthly"
-- For weekly: parse day names (Monday, Tuesday, etc.) into weekdays parameter
-- For monthly: parse day numbers (1-31) into days_of_month parameter
-- Start date should be in YYYY-MM-DD format (use today's date if not specified)
-- Examples:
-  * "Create a daily standup task" → daily pattern starting today
-  * "Weekly team meeting every Monday and Wednesday" → weekly pattern with weekdays="Monday,Wednesday"
-  * "Monthly report on the 1st and 15th" → monthly pattern with days_of_month="1,15"
-
-CRITICAL: CHOOSING THE RIGHT TOOL:
-- When the user provides a TASK NAME (e.g., "Update Hello World", "Delete my shopping task"):
-  → Use the high-level *_by_name tools: update_task_by_name, delete_task_by_name, complete_task_by_name
-  → These tools handle the UUID lookup automatically in ONE step
-  → Example: User says "Update Test Task description to xyz" → Call update_task_by_name(task_name="Test Task", new_description="xyz")
-
-- When the user provides a TASK UUID (rare, e.g., "Update task abc-123-def"):
-  → Use the low-level tools: update_task, delete_task, complete_task
-  → Example: User says "Update task abc-123-def" → Call update_task(task_id="abc-123-def", ...)
-
-- NEVER do multi-step workflows manually (list_tasks → extract UUID → call low-level tool)
-- The *_by_name tools do this automatically for you in a single call
-
-CRITICAL CONTEXT AWARENESS:
-- ALWAYS read and understand the full conversation history before responding
-- If you just asked a clarification question, the user's next message is likely answering that question
-- When you ask "which task?" and the user responds with a task name, they are answering your question - NOT greeting you
-- Task names like "Hello World" or "Buy milk" are task identifiers, not greetings or commands
-- Before treating a message as a greeting, check if you recently asked a question that the message might be answering
-
-CRITICAL CLARIFICATION RULES:
-- When you find MULTIPLE tasks that match the user's request, you MUST ask which specific one they mean
-- DO NOT ask "Would you like me to delete it?" when there are multiple matches
-- INSTEAD ask "I found multiple tasks: [list them]. Which one would you like to [action]?"
-- Be specific about the differences (e.g., status, priority, description) to help the user choose
-- Example: "I found 3 tasks named 'Test Task'. Which one would you like to delete: the pending one, the completed one, or the one with description 'xyz'?"
-
-Guidelines:
-- Respond naturally to greetings and casual conversation ONLY when not in the middle of a task operation
-- When users want to manage tasks, use the appropriate MCP tool
-- Be concise but friendly
-- Suggest helpful task management practices when relevant
-- Always confirm actions after they're completed
-- When you need clarification, remember the context when the user responds"""
+Key rules:
+1. Use *_by_name tools when user provides task names (e.g., "Update Hello World")
+2. Use UUID tools only when user provides UUIDs
+3. For recurring tasks: daily/weekly/monthly patterns, parse days/weekdays/dates from user input
+4. When multiple tasks match, list them and ask which one
+5. If you asked a clarification question, the next message is likely the answer
+6. Confirm actions after completion"""
 
 
 # Convert MCP tools to OpenAI function calling format
@@ -449,7 +397,7 @@ class TodoAgent:
                 messages=messages,
                 tools=get_openai_tools(),
                 tool_choice="auto",
-                max_tokens=500,
+                max_tokens=200,
                 temperature=0.7
             )
 
@@ -520,7 +468,7 @@ class TodoAgent:
                 final_response = self.openai_client.chat.completions.create(
                     model=self.model,
                     messages=messages,
-                    max_tokens=500,
+                    max_tokens=200,
                     temperature=0.7
                 )
 

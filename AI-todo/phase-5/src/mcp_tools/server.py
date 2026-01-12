@@ -32,6 +32,23 @@ def set_context(db_session: Any, user_id: UUID) -> None:
     _user_id = user_id
 
 
+async def publish_kafka_event(event_type: str, task_data: dict, user_id: str, previous_task_data: dict = None):
+    """Publish Kafka event for task operations to trigger notifications."""
+    try:
+        from services.kafka_producer import kafka_producer_service
+
+        if kafka_producer_service.producer:
+            await kafka_producer_service.send_task_event(
+                event_type=event_type,
+                task_data=task_data,
+                user_id=user_id,
+                previous_task_data=previous_task_data
+            )
+    except Exception as e:
+        # Log but don't fail the operation if Kafka publishing fails
+        print(f"[MCP] Warning: Failed to publish Kafka event: {e}")
+
+
 @mcp.tool()
 async def add_task(
     title: str,
@@ -76,6 +93,17 @@ async def add_task(
         _db_session.add(new_task)
         _db_session.commit()
         _db_session.refresh(new_task)
+
+        # Publish Kafka event for notifications
+        task_data = {
+            "id": str(new_task.id),
+            "title": new_task.title,
+            "description": new_task.description,
+            "status": new_task.status.value if hasattr(new_task.status, 'value') else str(new_task.status),
+            "priority": new_task.priority.value if hasattr(new_task.priority, 'value') else str(new_task.priority),
+            "user_id": str(new_task.user_id),
+        }
+        await publish_kafka_event("created", task_data, str(_user_id))
 
         return {
             "task_id": str(new_task.id),
@@ -183,6 +211,17 @@ async def complete_task(
         _db_session.add(task)
         _db_session.commit()
 
+        # Publish Kafka event for notifications
+        task_data = {
+            "id": str(task.id),
+            "title": task.title,
+            "description": task.description,
+            "status": task.status.value if hasattr(task.status, 'value') else str(task.status),
+            "priority": task.priority.value if hasattr(task.priority, 'value') else str(task.priority),
+            "user_id": str(task.user_id),
+        }
+        await publish_kafka_event("completed", task_data, str(_user_id))
+
         return {
             "task_id": str(task.id),
             "status": "completed",
@@ -227,9 +266,22 @@ async def delete_task(
 
         title = task.title
 
+        # Prepare task data for Kafka event before deletion
+        task_data = {
+            "id": str(task.id),
+            "title": task.title,
+            "description": task.description,
+            "status": task.status.value if hasattr(task.status, 'value') else str(task.status),
+            "priority": task.priority.value if hasattr(task.priority, 'value') else str(task.priority),
+            "user_id": str(task.user_id),
+        }
+
         # Delete task
         _db_session.delete(task)
         _db_session.commit()
+
+        # Publish Kafka event for notifications
+        await publish_kafka_event("deleted", task_data, str(_user_id))
 
         return {
             "task_id": task_id,
@@ -286,6 +338,16 @@ async def update_task(
                 "error": "Task not found or not owned by user",
             }
 
+        # Store previous task data for Kafka event
+        previous_task_data = {
+            "id": str(task.id),
+            "title": task.title,
+            "description": task.description,
+            "status": task.status.value if hasattr(task.status, 'value') else str(task.status),
+            "priority": task.priority.value if hasattr(task.priority, 'value') else str(task.priority),
+            "user_id": str(task.user_id),
+        }
+
         # Update fields if provided
         if title is not None:
             task.title = title
@@ -304,6 +366,19 @@ async def update_task(
 
         _db_session.add(task)
         _db_session.commit()
+
+        # Prepare updated task data for Kafka event
+        task_data = {
+            "id": str(task.id),
+            "title": task.title,
+            "description": task.description,
+            "status": task.status.value if hasattr(task.status, 'value') else str(task.status),
+            "priority": task.priority.value if hasattr(task.priority, 'value') else str(task.priority),
+            "user_id": str(task.user_id),
+        }
+
+        # Publish Kafka event for notifications
+        await publish_kafka_event("updated", task_data, str(_user_id), previous_task_data)
 
         return {
             "task_id": str(task.id),
